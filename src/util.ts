@@ -144,7 +144,6 @@ export {
   isMatch,
   isQuote,
   isWhitespace,
-  normalizeEncodingName,
   notMatch,
   qname,
   textopts,
