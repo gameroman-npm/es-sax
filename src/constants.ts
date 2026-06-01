@@ -305,10 +305,32 @@ const ENTITIES = {
   diams: 9830,
 } as const;
 
+const EVENTS = [
+  "text",
+  "processinginstruction",
+  "sgmldeclaration",
+  "doctype",
+  "comment",
+  "opentagstart",
+  "attribute",
+  "opentag",
+  "closetag",
+  "opencdata",
+  "cdata",
+  "closecdata",
+  "error",
+  "end",
+  "ready",
+  "script",
+  "opennamespace",
+  "closenamespace",
+] as const;
+
 export {
   CDATA,
   DOCTYPE,
   ENTITIES,
+  EVENTS,
   XMLNS_NAMESPACE,
   XML_ENTITIES,
   XML_NAMESPACE,
