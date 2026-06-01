@@ -1,5 +1,3 @@
-import { test } from "./index.ts";
-
 var parser = require("../").parser(true);
 var t = require("tap");
 t.plan(1);

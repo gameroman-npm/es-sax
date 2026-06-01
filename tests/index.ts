@@ -16,43 +16,55 @@ function test(options: TestOptions) {
   var expect = options.expect;
   var e = 0;
 
-  nodeTest(() => {
-    sax.EVENTS.forEach(function (ev) {
-      parser["on" + ev] = function (n) {
-        if (process.env.DEBUG) {
-          console.error({ expect: expect[e], actual: [ev, n] });
-        }
+  let testError: unknown = null;
 
-        if (e >= expect.length && (ev === "end" || ev === "ready")) {
-          return;
-        }
-        assert.ok(e < expect.length, "no unexpected events");
+  sax.EVENTS.forEach(function (ev) {
+    parser["on" + ev] = function (n) {
+      if (process.env.DEBUG) {
+        console.error({ expect: expect[e], actual: [ev, n] });
+      }
 
-        if (!expect[e]) {
-          assert.fail(
-            `did not expect this event. Event: ${ev}, Data: ${JSON.stringify(n)}`,
-          );
-        }
+      if (e >= expect.length && (ev === "end" || ev === "ready")) {
+        return;
+      }
+      assert.ok(e < expect.length, "no unexpected events");
 
-        assert.strictEqual(ev, expect[e][0]);
+      if (!expect[e]) {
+        assert.fail(
+          `did not expect this event. Event: ${ev}, Data: ${JSON.stringify(n)}`,
+        );
+      }
 
-        if (ev === "error") {
-          assert.strictEqual(n.message, expect[e][1]);
-        } else {
-          assert.deepStrictEqual(n, expect[e][1]);
-        }
+      assert.strictEqual(ev, expect[e][0]);
 
-        e++;
-        if (ev === "error") {
-          parser.resume();
-        }
-      };
-    });
+      if (ev === "error") {
+        assert.strictEqual(n.message, expect[e][1]);
+      } else {
+        assert.deepStrictEqual(n, expect[e][1]);
+      }
 
-    if (xml) {
-      parser.write(xml).close();
-    }
+      e++;
+      if (ev === "error") {
+        parser.resume();
+      }
+    };
   });
+
+  nodeTest(() => {
+    if (testError) {
+      throw testError;
+    }
+
+    assert.strictEqual(
+      e,
+      expect.length,
+      `Expected ${expect.length} events, but only received ${e}`,
+    );
+  });
+
+  if (xml) {
+    parser.write(xml).close();
+  }
 
   return parser;
 }

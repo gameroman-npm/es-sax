@@ -1,10 +1,10 @@
-import { test } from "./index.ts";
+import assert from "node:assert";
+import process from "node:process";
+import { test } from "node:test";
 
-var process = require("process");
-var t = require("tap");
 import sax from "es-sax";
 
-t.test("cdata-mega", (t) => {
+test("cdata-mega", () => {
   var bytesInMiB = 1024 * 1024;
   var cdataSize = 1 * bytesInMiB;
   var expectedUpperBound = cdataSize * 2;
@@ -21,13 +21,12 @@ t.test("cdata-mega", (t) => {
   parser.write(xml).close();
   var memoryUsageDiff = process.memoryUsage().heapUsed - memoryUsageBefore;
 
-  t.equal(parsedCData, cdataContent);
-  t.ok(
+  assert.strictEqual(parsedCData, cdataContent);
+  assert.ok(
     memoryUsageDiff < expectedUpperBound,
     "Expected at most " +
       expectedUpperBound / bytesInMiB +
       " MiB to be allocated, was " +
       memoryUsageDiff / bytesInMiB,
   );
-  t.end();
 });
