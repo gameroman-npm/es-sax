@@ -1,3 +1,4 @@
+import { buffers } from "./constants";
 import { textopts } from "./util";
 
 function emit(parser, event, data?): void {
@@ -45,9 +46,9 @@ function error(parser, er) {
   return parser;
 }
 
-function clearBuffers(parser, buffers): void {
-  for (let i = 0, l = buffers.length; i < l; i++) {
-    parser[buffers[i]] = "";
+function clearBuffers(parser): void {
+  for (const buf of buffers) {
+    parser[buf] = "";
   }
 }
 
