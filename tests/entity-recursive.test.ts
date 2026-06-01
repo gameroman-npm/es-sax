@@ -1,6 +1,6 @@
-import { test } from "./index.ts";
-
 import sax from "es-sax";
+
+import { test } from "./index.ts";
 
 sax.ENTITIES.attr = "1";
 sax.ENTITIES.text = "2.&attr;";
