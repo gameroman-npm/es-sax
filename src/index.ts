@@ -1,3 +1,88 @@
+function determineBufferEncoding(
+  data: Buffer,
+  isEnd: boolean,
+): "utf-16le" | "utf-16be" | "utf8" | null {
+  // BOM-based detection is the most reliable signal when present.
+  if (data.length >= 2) {
+    if (data[0] === 0xff && data[1] === 0xfe) {
+      return "utf-16le";
+    }
+
+    if (data[0] === 0xfe && data[1] === 0xff) {
+      return "utf-16be";
+    }
+  }
+
+  if (
+    data.length >= 3 &&
+    data[0] === 0xef &&
+    data[1] === 0xbb &&
+    data[2] === 0xbf
+  ) {
+    return "utf8";
+  }
+
+  if (data.length >= 4) {
+    // XML documents without a BOM still start with "<?xml", which is enough
+    // to distinguish UTF-16LE/BE from UTF-8 by looking at the zero bytes.
+    if (
+      data[0] === 0x3c &&
+      data[1] === 0x00 &&
+      data[2] === 0x3f &&
+      data[3] === 0x00
+    ) {
+      return "utf-16le";
+    }
+
+    if (
+      data[0] === 0x00 &&
+      data[1] === 0x3c &&
+      data[2] === 0x00 &&
+      data[3] === 0x3f
+    ) {
+      return "utf-16be";
+    }
+
+    return "utf8";
+  }
+
+  return isEnd ? "utf8" : null;
+}
+
+function textopts(
+  opt: { trim: boolean; normalize: boolean },
+  text: string,
+): string {
+  if (opt.trim) text = text.trim();
+  if (opt.normalize) text = text.replace(/\s+/g, " ");
+  return text;
+}
+
+function isWhitespace(c: string) {
+  return c === " " || c === "\n" || c === "\r" || c === "\t";
+}
+
+function isQuote(c: string) {
+  return c === '"' || c === "'";
+}
+
+function isAttribEnd(c: string) {
+  return c === ">" || isWhitespace(c);
+}
+
+function isMatch(regex: RegExp, c: string): boolean {
+  return regex.test(c);
+}
+
+function notMatch(regex: RegExp, c: string) {
+  return !isMatch(regex, c);
+}
+
+function getDeclaredEncoding(body: string): string | null | undefined {
+  var match = body && body.match(/(?:^|\s)encoding\s*=\s*(['"])([^'"]+)\1/i);
+  return match ? match[2] : null;
+}
+
 const sax: unknown = {};
 
 (function (sax) {
@@ -209,54 +294,6 @@ const sax: unknown = {};
     return new SAXStream(strict, opt);
   }
 
-  function determineBufferEncoding(data, isEnd) {
-    // BOM-based detection is the most reliable signal when present.
-    if (data.length >= 2) {
-      if (data[0] === 0xff && data[1] === 0xfe) {
-        return "utf-16le";
-      }
-
-      if (data[0] === 0xfe && data[1] === 0xff) {
-        return "utf-16be";
-      }
-    }
-
-    if (
-      data.length >= 3 &&
-      data[0] === 0xef &&
-      data[1] === 0xbb &&
-      data[2] === 0xbf
-    ) {
-      return "utf8";
-    }
-
-    if (data.length >= 4) {
-      // XML documents without a BOM still start with "<?xml", which is enough
-      // to distinguish UTF-16LE/BE from UTF-8 by looking at the zero bytes.
-      if (
-        data[0] === 0x3c &&
-        data[1] === 0x00 &&
-        data[2] === 0x3f &&
-        data[3] === 0x00
-      ) {
-        return "utf-16le";
-      }
-
-      if (
-        data[0] === 0x00 &&
-        data[1] === 0x3c &&
-        data[2] === 0x00 &&
-        data[3] === 0x3f
-      ) {
-        return "utf-16be";
-      }
-
-      return "utf8";
-    }
-
-    return isEnd ? "utf8" : null;
-  }
-
   function SAXStream(strict, opt) {
     if (!(this instanceof SAXStream)) {
       return new SAXStream(strict, opt);
@@ -419,26 +456,6 @@ const sax: unknown = {};
     /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/;
   var entityBody =
     /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/;
-
-  function isWhitespace(c) {
-    return c === " " || c === "\n" || c === "\r" || c === "\t";
-  }
-
-  function isQuote(c) {
-    return c === '"' || c === "'";
-  }
-
-  function isAttribEnd(c) {
-    return c === ">" || isWhitespace(c);
-  }
-
-  function isMatch(regex, c) {
-    return regex.test(c);
-  }
-
-  function notMatch(regex, c) {
-    return !isMatch(regex, c);
-  }
 
   var S = 0;
   sax.STATE = {
@@ -761,11 +778,6 @@ const sax: unknown = {};
     parser[event] && parser[event](data);
   }
 
-  function getDeclaredEncoding(body) {
-    var match = body && body.match(/(?:^|\s)encoding\s*=\s*(['"])([^'"]+)\1/i);
-    return match ? match[2] : null;
-  }
-
   function normalizeEncodingName(encoding) {
     if (!encoding) {
       return null;
@@ -818,12 +830,6 @@ const sax: unknown = {};
     parser.textNode = textopts(parser.opt, parser.textNode);
     if (parser.textNode) emit(parser, "ontext", parser.textNode);
     parser.textNode = "";
-  }
-
-  function textopts(opt, text) {
-    if (opt.trim) text = text.trim();
-    if (opt.normalize) text = text.replace(/\s+/g, " ");
-    return text;
   }
 
   function error(parser, er) {
