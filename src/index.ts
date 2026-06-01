@@ -91,6 +91,16 @@ function charAt(chunk: string, i: number): string {
   return result;
 }
 
+function emit(parser, event, data): void {
+  parser[event]?.(data);
+}
+
+function closeText(parser): void {
+  parser.textNode = textopts(parser.opt, parser.textNode);
+  if (parser.textNode) emit(parser, "ontext", parser.textNode);
+  parser.textNode = "";
+}
+
 // this really needs to be replaced with character classes.
 // XML allows all manner of ridiculous numbers and digits.
 const CDATA = "[CDATA[";
@@ -782,10 +792,6 @@ const sax: unknown = {};
   // shorthand
   S = sax.STATE;
 
-  function emit(parser, event, data) {
-    parser[event] && parser[event](data);
-  }
-
   function normalizeEncodingName(encoding) {
     if (!encoding) {
       return null;
@@ -832,12 +838,6 @@ const sax: unknown = {};
   function emitNode(parser, nodeType, data) {
     if (parser.textNode) closeText(parser);
     emit(parser, nodeType, data);
-  }
-
-  function closeText(parser) {
-    parser.textNode = textopts(parser.opt, parser.textNode);
-    if (parser.textNode) emit(parser, "ontext", parser.textNode);
-    parser.textNode = "";
   }
 
   function error(parser, er) {
