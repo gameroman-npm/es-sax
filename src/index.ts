@@ -1,188 +1,36 @@
-function determineBufferEncoding(
-  data: Buffer,
-  isEnd: boolean,
-): "utf-16le" | "utf-16be" | "utf8" | null {
-  // BOM-based detection is the most reliable signal when present.
-  if (data.length >= 2) {
-    if (data[0] === 0xff && data[1] === 0xfe) {
-      return "utf-16le";
-    }
-
-    if (data[0] === 0xfe && data[1] === 0xff) {
-      return "utf-16be";
-    }
-  }
-
-  if (
-    data.length >= 3 &&
-    data[0] === 0xef &&
-    data[1] === 0xbb &&
-    data[2] === 0xbf
-  ) {
-    return "utf8";
-  }
-
-  if (data.length >= 4) {
-    // XML documents without a BOM still start with "<?xml", which is enough
-    // to distinguish UTF-16LE/BE from UTF-8 by looking at the zero bytes.
-    if (
-      data[0] === 0x3c &&
-      data[1] === 0x00 &&
-      data[2] === 0x3f &&
-      data[3] === 0x00
-    ) {
-      return "utf-16le";
-    }
-
-    if (
-      data[0] === 0x00 &&
-      data[1] === 0x3c &&
-      data[2] === 0x00 &&
-      data[3] === 0x3f
-    ) {
-      return "utf-16be";
-    }
-
-    return "utf8";
-  }
-
-  return isEnd ? "utf8" : null;
-}
-
-function normalizeEncodingName(encoding?: string): string | null {
-  if (!encoding) {
-    return null;
-  }
-
-  return encoding.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-function textopts(
-  opt: { trim: boolean; normalize: boolean },
-  text: string,
-): string {
-  if (opt.trim) text = text.trim();
-  if (opt.normalize) text = text.replace(/\s+/g, " ");
-  return text;
-}
-
-function qname(name: string, attribute?: true) {
-  const i = name.indexOf(":");
-  const qualName = i < 0 ? ["", name] : name.split(":");
-  let prefix = qualName[0];
-  let local = qualName[1];
-
-  // <x "xmlns"="http://foo">
-  if (attribute && name === "xmlns") {
-    prefix = "xmlns";
-    local = "";
-  }
-
-  return { prefix, local };
-}
-
-function isWhitespace(c: string) {
-  return c === " " || c === "\n" || c === "\r" || c === "\t";
-}
-
-function isQuote(c: string) {
-  return c === '"' || c === "'";
-}
-
-function isAttribEnd(c: string) {
-  return c === ">" || isWhitespace(c);
-}
-
-function isMatch(regex: RegExp, c: string): boolean {
-  return regex.test(c);
-}
-
-function notMatch(regex: RegExp, c: string) {
-  return !isMatch(regex, c);
-}
-
-function getDeclaredEncoding(body: string): string | null | undefined {
-  const match = body && body.match(/(?:^|\s)encoding\s*=\s*(['"])([^'"]+)\1/i);
-  return match ? match[2] : null;
-}
-
-function charAt(chunk: string, i: number): string {
-  let result = "";
-  if (i < chunk.length) {
-    result = chunk.charAt(i);
-  }
-  return result;
-}
-
-function emit(parser, event, data?): void {
-  parser[event]?.(data);
-}
-
-function closeText(parser): void {
-  parser.textNode = textopts(parser.opt, parser.textNode);
-  if (parser.textNode) emit(parser, "ontext", parser.textNode);
-  parser.textNode = "";
-}
-
-function emitNode(parser, nodeType, data?): void {
-  if (parser.textNode) closeText(parser);
-  emit(parser, nodeType, data);
-}
-
-function newTag(parser) {
-  if (!parser.strict) parser.tagName = parser.tagName[parser.looseCase]();
-  const parent = parser.tags[parser.tags.length - 1] || parser;
-  const tag = (parser.tag = { name: parser.tagName, attributes: {} });
-
-  // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
-  if (parser.opt.xmlns) {
-    tag.ns = parent.ns;
-  }
-  parser.attribList.length = 0;
-  emitNode(parser, "onopentagstart", tag);
-}
-
-function error(parser, er) {
-  closeText(parser);
-  if (parser.trackPosition) {
-    er +=
-      "\nLine: " +
-      parser.line +
-      "\nColumn: " +
-      parser.column +
-      "\nChar: " +
-      parser.c;
-  }
-  er = new Error(er);
-  parser.error = er;
-  emit(parser, "onerror", er);
-  return parser;
-}
-
-// this really needs to be replaced with character classes.
-// XML allows all manner of ridiculous numbers and digits.
-const CDATA = "[CDATA[";
-const DOCTYPE = "DOCTYPE";
-const XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
-const XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/";
-const rootNS = { xml: XML_NAMESPACE, xmlns: XMLNS_NAMESPACE };
-
-// http://www.w3.org/TR/REC-xml/#NT-NameStartChar
-// This implementation works on strings, a single character at a time
-// as such, it cannot ever support astral-plane characters (10000-EFFFF)
-// without a significant breaking change to either this  parser, or the
-// JavaScript language.  Implementation of an emoji-capable xml parser
-// is left as an exercise for the reader.
-const nameStart =
-  /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/;
-
-const nameBody =
-  /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/;
-
-const entityStart =
-  /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/;
-const entityBody =
-  /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/;
+import {
+  CDATA,
+  DOCTYPE,
+  XMLNS_NAMESPACE,
+  XML_NAMESPACE,
+  entityBody,
+  entityStart,
+  nameBody,
+  nameStart,
+  rootNS,
+} from "./constants";
+import {
+  clearBuffers,
+  closeText,
+  emit,
+  emitNode,
+  error,
+  flushBuffers,
+  newTag,
+} from "./parser";
+import {
+  charAt,
+  determineBufferEncoding,
+  encodingsMatch,
+  getDeclaredEncoding,
+  isAttribEnd,
+  isMatch,
+  isQuote,
+  isWhitespace,
+  notMatch,
+  qname,
+  textopts,
+} from "./util";
 
 const sax: unknown = {};
 
@@ -248,7 +96,7 @@ const sax: unknown = {};
     }
 
     const parser = this;
-    clearBuffers(parser);
+    clearBuffers(parser, buffers);
     parser.q = parser.c = "";
     parser.bufferCheckPosition = sax.MAX_BUFFER_LENGTH;
     parser.encoding = null;
@@ -342,24 +190,6 @@ const sax: unknown = {};
     // schedule the next check for the earliest possible buffer overrun.
     const m = sax.MAX_BUFFER_LENGTH - maxActual;
     parser.bufferCheckPosition = m + parser.position;
-  }
-
-  function clearBuffers(parser) {
-    for (let i = 0, l = buffers.length; i < l; i++) {
-      parser[buffers[i]] = "";
-    }
-  }
-
-  function flushBuffers(parser) {
-    closeText(parser);
-    if (parser.cdata !== "") {
-      emitNode(parser, "oncdata", parser.cdata);
-      parser.cdata = "";
-    }
-    if (parser.script !== "") {
-      emitNode(parser, "onscript", parser.script);
-      parser.script = "";
-    }
   }
 
   SAXParser.prototype = {
@@ -849,21 +679,6 @@ const sax: unknown = {};
 
   // shorthand
   S = sax.STATE;
-
-  function encodingsMatch(detectedEncoding, declaredEncoding) {
-    const detected = normalizeEncodingName(detectedEncoding);
-    const declared = normalizeEncodingName(declaredEncoding);
-
-    if (!detected || !declared) {
-      return true;
-    }
-
-    if (declared === "utf16") {
-      return detected === "utf16le" || detected === "utf16be";
-    }
-
-    return detected === declared;
-  }
 
   function validateXmlDeclarationEncoding(parser, data) {
     if (!parser.strict || !parser.encoding || !data || data.name !== "xml") {
