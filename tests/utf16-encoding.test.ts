@@ -3,8 +3,8 @@ import { test } from "node:test";
 import sax from "es-sax";
 
 test.skip("parses utf-16 xml streams when the declaration says UTF-16", (t) => {
-  var stream = sax.createStream(true);
-  var result = {
+  const stream = sax.createStream(true);
+  const result = {
     processinginstruction: null,
     opentagstart: null,
     opentag: null,
@@ -13,9 +13,9 @@ test.skip("parses utf-16 xml streams when the declaration says UTF-16", (t) => {
     error: null,
     errorCount: 0,
   };
-  var xml =
+  const xml =
     '<?xml version="1.0" encoding="UTF-16"?>\n<person>Hi Jérôme</person>';
-  var utf16 = Buffer.concat([
+  const utf16 = Buffer.concat([
     Buffer.from([0xff, 0xfe]),
     Buffer.from(xml, "utf16le"),
   ]);
@@ -69,11 +69,11 @@ test.skip("parses utf-16 xml streams when the declaration says UTF-16", (t) => {
 });
 
 test.skip("fails in strict mode when declared encoding conflicts with detected utf-16", (t) => {
-  var stream = sax.createStream(true);
-  var error = null;
-  var xml =
+  const stream = sax.createStream(true);
+  let error = null;
+  const xml =
     '<?xml version="1.0" encoding="UTF-8"?>\n<person>Hi Jérôme</person>';
-  var utf16 = Buffer.concat([
+  const utf16 = Buffer.concat([
     Buffer.from([0xff, 0xfe]),
     Buffer.from(xml, "utf16le"),
   ]);
@@ -97,14 +97,14 @@ test.skip("fails in strict mode when declared encoding conflicts with detected u
 });
 
 test.skip("does not fail in non-strict mode when declared encoding conflicts with detected utf-16", (t) => {
-  var stream = sax.createStream(false);
-  var result = {
+  const stream = sax.createStream(false);
+  const result = {
     text: "",
     error: null,
   };
-  var xml =
+  const xml =
     '<?xml version="1.0" encoding="UTF-8"?>\n<person>Hi Jérôme</person>';
-  var utf16 = Buffer.concat([
+  const utf16 = Buffer.concat([
     Buffer.from([0xff, 0xfe]),
     Buffer.from(xml, "utf16le"),
   ]);

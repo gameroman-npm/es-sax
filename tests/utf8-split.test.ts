@@ -4,9 +4,9 @@ import { test } from "node:test";
 import sax from "es-sax";
 
 test.skip(() => {
-  var saxStream = sax.createStream();
+  const saxStream = sax.createStream();
 
-  var b = Buffer.from("误");
+  const b = Buffer.from("误");
 
   saxStream.on("text", function (text) {
     assert.strictEqual(text, b.toString());
@@ -26,7 +26,7 @@ test.skip(() => {
 });
 
 test.skip(() => {
-  var saxStream2 = sax.createStream();
+  const saxStream2 = sax.createStream();
 
   saxStream2.on("text", function (text) {
     assert.strictEqual(text, "\uFFFD");

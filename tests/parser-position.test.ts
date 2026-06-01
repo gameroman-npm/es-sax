@@ -4,11 +4,11 @@ import { test } from "node:test";
 import sax from "es-sax";
 
 function testPosition(chunks, expectedEvents) {
-  var parser = sax.parser();
+  const parser = sax.parser();
 
   expectedEvents.forEach(function (expectation) {
     parser["on" + expectation[0]] = function () {
-      for (var prop in expectation[1]) {
+      for (const prop in expectation[1]) {
         assert.strictEqual(parser[prop], expectation[1][prop]);
       }
     };

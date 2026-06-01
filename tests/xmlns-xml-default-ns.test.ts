@@ -1,6 +1,6 @@
 import { test } from "./index.ts";
 
-var xmlnsAttr = {
+const xmlnsAttr = {
   name: "xmlns",
   value: "http://foo",
   prefix: "xmlns",
@@ -8,7 +8,7 @@ var xmlnsAttr = {
   uri: "http://www.w3.org/2000/xmlns/",
 };
 
-var attrAttr = {
+const attrAttr = {
   name: "attr",
   value: "bar",
   prefix: "",

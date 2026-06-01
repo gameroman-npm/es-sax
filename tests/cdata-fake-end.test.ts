@@ -1,6 +1,6 @@
 import { test } from "./index.ts";
 
-var p = test({
+const p = test({
   expect: [
     ["opentagstart", { name: "R", attributes: {} }],
     ["opentag", { name: "R", attributes: {}, isSelfClosing: false }],
@@ -10,13 +10,13 @@ var p = test({
     ["closetag", "R"],
   ],
 });
-var x = "<r><![CDATA[[[[[[[[[]]]]]]]]]]></r>";
-for (var i = 0; i < x.length; i++) {
+let x = "<r><![CDATA[[[[[[[[[]]]]]]]]]]></r>";
+for (let i = 0; i < x.length; i++) {
   p.write(x.charAt(i));
 }
 p.close();
 
-var p2 = test({
+const p2 = test({
   expect: [
     ["opentagstart", { name: "R", attributes: {} }],
     ["opentag", { name: "R", attributes: {}, isSelfClosing: false }],

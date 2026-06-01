@@ -8,7 +8,7 @@ import sax from "es-sax";
  * See: https://en.wikipedia.org/wiki/Billion_laughs_attack
  */
 
-var ENTITIES = {
+const ENTITIES = {
   lol: "lolz",
   lol1: "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;",
   lol2: "&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;&lol1;",
@@ -21,14 +21,14 @@ var ENTITIES = {
   lol9: "&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;&lol8;",
 };
 
-var BODY =
+const BODY =
   '<?xml version="1.0"?><!DOCTYPE lolz [<!ELEMENT lolz (#PCDATA)>]><lolz>&lol9;</lolz>';
 
-for (var strictMode of [true, false]) {
+for (const strictMode of [true, false]) {
   const modeLabel = strictMode ? "[Strict]" : "[Loose]";
 
   test(`${modeLabel} should not throw on billion laughs with unparsed entities disabled`, () => {
-    var parser = sax.parser(strictMode);
+    const parser = sax.parser(strictMode);
     parser.ENTITIES = { ...parser.ENTITIES, ...ENTITIES };
 
     assert.doesNotThrow(() => {
@@ -37,7 +37,7 @@ for (var strictMode of [true, false]) {
   });
 
   test(`${modeLabel} should count number of entities including nested entities`, () => {
-    var parser = sax.parser(strictMode, {
+    const parser = sax.parser(strictMode, {
       unparsedEntities: true,
     });
     parser.ENTITIES = { ...parser.ENTITIES, ...ENTITIES };
@@ -51,7 +51,7 @@ for (var strictMode of [true, false]) {
   });
 
   test(`${modeLabel} should count depth of entities correctly`, () => {
-    var parser = sax.parser(strictMode, {
+    const parser = sax.parser(strictMode, {
       unparsedEntities: true,
       maxEntityDepth: 3,
     });
@@ -79,7 +79,7 @@ for (var strictMode of [true, false]) {
   });
 
   test(`${modeLabel} should throw on billion laughs with only entity count check`, () => {
-    var parser = sax.parser(strictMode, {
+    const parser = sax.parser(strictMode, {
       unparsedEntities: true,
       maxEntityDepth: Number.MAX_SAFE_INTEGER,
     });
@@ -96,7 +96,7 @@ for (var strictMode of [true, false]) {
   });
 
   test(`${modeLabel} should throw on billion laughs with only entity depth check`, () => {
-    var parser = sax.parser(strictMode, {
+    const parser = sax.parser(strictMode, {
       unparsedEntities: true,
       maxEntityCount: Number.MAX_SAFE_INTEGER,
     });

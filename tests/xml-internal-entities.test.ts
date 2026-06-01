@@ -1,11 +1,11 @@
 import { test } from "./index.ts";
 
-var iExpect = [];
-var myAttributes = {};
-var ENTITIES = {};
+const iExpect = [];
+const myAttributes = {};
+const ENTITIES = {};
 
 // generates xml like test0="&control;"
-var entitiesToTest = {
+const entitiesToTest = {
   // 'ENTITY_NAME': IS_VALID || [invalidCharPos, invalidChar],
   control0: true, // This is a vanilla control.
   // entityStart
@@ -21,8 +21,8 @@ var entitiesToTest = {
   "all:_#-.": true,
 };
 
-var xmlStart = '<a test="&amp;" ';
-var xmlEnd = "/>";
+let xmlStart = '<a test="&amp;" ';
+const xmlEnd = "/>";
 
 iExpect.push([
   "opentagstart",
@@ -41,11 +41,11 @@ iExpect.push([
 ]);
 myAttributes["test"] = "&";
 
-var entI = 0;
+let entI = 0;
 
 for (var entity in entitiesToTest) {
-  var attribName = "test" + entI;
-  var attribValue = "Testing " + entity;
+  const attribName = "test" + entI;
+  const attribValue = "Testing " + entity;
 
   // add the first part to use in calculation below
   xmlStart += attribName + '="' + "&";
@@ -83,7 +83,7 @@ iExpect.push([
 ]);
 iExpect.push(["closetag", "a"]);
 
-var parser = test({
+const parser = test({
   strict: true,
   expect: iExpect,
 });

@@ -4,7 +4,7 @@ import { test } from "node:test";
 import sax from "es-sax";
 
 test("should parse buffer input correctly", () => {
-  var parser = sax.parser(true);
+  const parser = sax.parser(true);
 
   parser.onopentag = function (node) {
     assert.deepStrictEqual(node, {
@@ -14,6 +14,6 @@ test("should parse buffer input correctly", () => {
     });
   };
 
-  var xml = Buffer.from("<x>y</x>");
+  const xml = Buffer.from("<x>y</x>");
   parser.write(xml).close();
 });

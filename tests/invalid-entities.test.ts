@@ -1,8 +1,8 @@
 import { test } from "./index.ts";
 
-var invalidEntities = ["1114112", "-1", "NaN"];
+const invalidEntities = ["1114112", "-1", "NaN"];
 
-for (var i = invalidEntities.length - 1; i >= 0; --i) {
+for (let i = invalidEntities.length - 1; i >= 0; --i) {
   test({
     xml: "<r>&#" + invalidEntities[i] + ";</r>",
     strict: false,

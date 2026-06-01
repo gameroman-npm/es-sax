@@ -11,12 +11,12 @@ interface TestOptions {
 }
 
 function test(options: TestOptions) {
-  var xml = options.xml;
-  var parser = sax.parser(options.strict, options.opt);
-  var expect = options.expect;
-  var e = 0;
+  const xml = options.xml;
+  const parser = sax.parser(options.strict, options.opt);
+  const expect = options.expect;
+  let e = 0;
 
-  let testError: unknown = null;
+  const testError: unknown = null;
 
   sax.EVENTS.forEach(function (ev) {
     parser["on" + ev] = function (n) {

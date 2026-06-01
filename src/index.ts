@@ -79,7 +79,7 @@ function notMatch(regex: RegExp, c: string) {
 }
 
 function getDeclaredEncoding(body: string): string | null | undefined {
-  var match = body && body.match(/(?:^|\s)encoding\s*=\s*(['"])([^'"]+)\1/i);
+  const match = body && body.match(/(?:^|\s)encoding\s*=\s*(['"])([^'"]+)\1/i);
   return match ? match[2] : null;
 }
 
@@ -105,7 +105,7 @@ const sax: unknown = {};
   // Set to Infinity to have unlimited buffers.
   sax.MAX_BUFFER_LENGTH = 64 * 1024;
 
-  var buffers = [
+  const buffers = [
     "comment",
     "sgmlDecl",
     "textNode",
@@ -146,7 +146,7 @@ const sax: unknown = {};
       return new SAXParser(strict, opt);
     }
 
-    var parser = this;
+    const parser = this;
     clearBuffers(parser);
     parser.q = parser.c = "";
     parser.bufferCheckPosition = sax.MAX_BUFFER_LENGTH;
@@ -194,24 +194,24 @@ const sax: unknown = {};
     Object.create = function (o) {
       function F() {}
       F.prototype = o;
-      var newf = new F();
+      const newf = new F();
       return newf;
     };
   }
 
   if (!Object.keys) {
     Object.keys = function (o) {
-      var a = [];
-      for (var i in o) if (o.hasOwnProperty(i)) a.push(i);
+      const a = [];
+      for (const i in o) if (o.hasOwnProperty(i)) a.push(i);
       return a;
     };
   }
 
   function checkBufferLength(parser) {
-    var maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10);
-    var maxActual = 0;
-    for (var i = 0, l = buffers.length; i < l; i++) {
-      var len = parser[buffers[i]].length;
+    const maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10);
+    let maxActual = 0;
+    for (let i = 0, l = buffers.length; i < l; i++) {
+      const len = parser[buffers[i]].length;
       if (len > maxAllowed) {
         // Text/cdata nodes can get big, and since they're buffered,
         // we can get here under normal conditions.
@@ -239,12 +239,12 @@ const sax: unknown = {};
       maxActual = Math.max(maxActual, len);
     }
     // schedule the next check for the earliest possible buffer overrun.
-    var m = sax.MAX_BUFFER_LENGTH - maxActual;
+    const m = sax.MAX_BUFFER_LENGTH - maxActual;
     parser.bufferCheckPosition = m + parser.position;
   }
 
   function clearBuffers(parser) {
-    for (var i = 0, l = buffers.length; i < l; i++) {
+    for (let i = 0, l = buffers.length; i < l; i++) {
       parser[buffers[i]] = "";
     }
   }
@@ -278,15 +278,15 @@ const sax: unknown = {};
     },
   };
 
-  var Stream;
+  let Stream;
   try {
-    Stream = require("stream").Stream;
+    Stream = require("node:stream").Stream;
   } catch (ex) {
     Stream = function () {};
   }
   if (!Stream) Stream = function () {};
 
-  var streamWraps = sax.EVENTS.filter(function (ev) {
+  const streamWraps = sax.EVENTS.filter(function (ev) {
     return ev !== "error" && ev !== "end";
   });
 
@@ -305,7 +305,7 @@ const sax: unknown = {};
     this.writable = true;
     this.readable = true;
 
-    var me = this;
+    const me = this;
 
     this._parser.onend = function () {
       me.emit("end");
@@ -355,7 +355,7 @@ const sax: unknown = {};
     }
 
     if (!this._decoder) {
-      var encoding = determineBufferEncoding(data, isEnd);
+      const encoding = determineBufferEncoding(data, isEnd);
       if (!encoding) {
         // A very short first chunk may not contain enough bytes to detect the
         // encoding yet, so defer decoding until the next write/end call.
@@ -382,7 +382,7 @@ const sax: unknown = {};
     } else if (this._decoderBuffer) {
       // Flush any buffered binary prefix before handling a string chunk.
       // This only matters if the caller mixes Buffer and string writes (used in test).
-      var remaining = this._decodeBuffer(Buffer.alloc(0), true);
+      const remaining = this._decodeBuffer(Buffer.alloc(0), true);
       if (remaining) {
         this._parser.write(remaining);
         this.emit("data", remaining);
@@ -400,13 +400,13 @@ const sax: unknown = {};
     }
     // Flush any remaining decoded data from the TextDecoder
     if (this._decoderBuffer) {
-      var finalChunk = this._decodeBuffer(Buffer.alloc(0), true);
+      const finalChunk = this._decodeBuffer(Buffer.alloc(0), true);
       if (finalChunk) {
         this._parser.write(finalChunk);
         this.emit("data", finalChunk);
       }
     } else if (this._decoder) {
-      var remaining = this._decoder.decode();
+      const remaining = this._decoder.decode();
       if (remaining) {
         this._parser.write(remaining);
         this.emit("data", remaining);
@@ -417,10 +417,10 @@ const sax: unknown = {};
   };
 
   SAXStream.prototype.on = function (ev, handler) {
-    var me = this;
+    const me = this;
     if (!me._parser["on" + ev] && streamWraps.indexOf(ev) !== -1) {
       me._parser["on" + ev] = function () {
-        var args =
+        const args =
           arguments.length === 1
             ? [arguments[0]]
             : Array.apply(null, arguments);
@@ -434,11 +434,11 @@ const sax: unknown = {};
 
   // this really needs to be replaced with character classes.
   // XML allows all manner of ridiculous numbers and digits.
-  var CDATA = "[CDATA[";
-  var DOCTYPE = "DOCTYPE";
-  var XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
-  var XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/";
-  var rootNS = { xml: XML_NAMESPACE, xmlns: XMLNS_NAMESPACE };
+  const CDATA = "[CDATA[";
+  const DOCTYPE = "DOCTYPE";
+  const XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace";
+  const XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/";
+  const rootNS = { xml: XML_NAMESPACE, xmlns: XMLNS_NAMESPACE };
 
   // http://www.w3.org/TR/REC-xml/#NT-NameStartChar
   // This implementation works on strings, a single character at a time
@@ -446,18 +446,18 @@ const sax: unknown = {};
   // without a significant breaking change to either this  parser, or the
   // JavaScript language.  Implementation of an emoji-capable xml parser
   // is left as an exercise for the reader.
-  var nameStart =
+  const nameStart =
     /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/;
 
-  var nameBody =
+  const nameBody =
     /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/;
 
-  var entityStart =
+  const entityStart =
     /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/;
-  var entityBody =
+  const entityBody =
     /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040.\d-]/;
 
-  var S = 0;
+  let S = 0;
   sax.STATE = {
     BEGIN: S++, // leading byte order mark or whitespace
     BEGIN_WHITESPACE: S++, // leading whitespace
@@ -762,12 +762,12 @@ const sax: unknown = {};
   };
 
   Object.keys(sax.ENTITIES).forEach(function (key) {
-    var e = sax.ENTITIES[key];
-    var s = typeof e === "number" ? String.fromCharCode(e) : e;
+    const e = sax.ENTITIES[key];
+    const s = typeof e === "number" ? String.fromCharCode(e) : e;
     sax.ENTITIES[key] = s;
   });
 
-  for (var s in sax.STATE) {
+  for (const s in sax.STATE) {
     sax.STATE[sax.STATE[s]] = s;
   }
 
@@ -806,7 +806,7 @@ const sax: unknown = {};
       return;
     }
 
-    var declaredEncoding = getDeclaredEncoding(data.body);
+    const declaredEncoding = getDeclaredEncoding(data.body);
     if (
       declaredEncoding &&
       !encodingsMatch(parser.encoding, declaredEncoding)
@@ -878,8 +878,8 @@ const sax: unknown = {};
 
   function newTag(parser) {
     if (!parser.strict) parser.tagName = parser.tagName[parser.looseCase]();
-    var parent = parser.tags[parser.tags.length - 1] || parser;
-    var tag = (parser.tag = { name: parser.tagName, attributes: {} });
+    const parent = parser.tags[parser.tags.length - 1] || parser;
+    const tag = (parser.tag = { name: parser.tagName, attributes: {} });
 
     // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
     if (parser.opt.xmlns) {
@@ -890,10 +890,10 @@ const sax: unknown = {};
   }
 
   function qname(name, attribute) {
-    var i = name.indexOf(":");
-    var qualName = i < 0 ? ["", name] : name.split(":");
-    var prefix = qualName[0];
-    var local = qualName[1];
+    const i = name.indexOf(":");
+    const qualName = i < 0 ? ["", name] : name.split(":");
+    let prefix = qualName[0];
+    let local = qualName[1];
 
     // <x "xmlns"="http://foo">
     if (attribute && name === "xmlns") {
@@ -918,9 +918,9 @@ const sax: unknown = {};
     }
 
     if (parser.opt.xmlns) {
-      var qn = qname(parser.attribName, true);
-      var prefix = qn.prefix;
-      var local = qn.local;
+      const qn = qname(parser.attribName, true);
+      const prefix = qn.prefix;
+      const local = qn.local;
 
       if (prefix === "xmlns") {
         // namespace binding attribute. push the binding into scope
@@ -946,8 +946,8 @@ const sax: unknown = {};
               parser.attribValue,
           );
         } else {
-          var tag = parser.tag;
-          var parent = parser.tags[parser.tags.length - 1] || parser;
+          const tag = parser.tag;
+          const parent = parser.tags[parser.tags.length - 1] || parser;
           if (tag.ns === parent.ns) {
             tag.ns = Object.create(parent.ns);
           }
@@ -974,10 +974,10 @@ const sax: unknown = {};
   function openTag(parser, selfClosing) {
     if (parser.opt.xmlns) {
       // emit namespace binding events
-      var tag = parser.tag;
+      const tag = parser.tag;
 
       // add namespace info to tag
-      var qn = qname(parser.tagName);
+      const qn = qname(parser.tagName);
       tag.prefix = qn.prefix;
       tag.local = qn.local;
       tag.uri = tag.ns[qn.prefix] || "";
@@ -990,7 +990,7 @@ const sax: unknown = {};
         tag.uri = qn.prefix;
       }
 
-      var parent = parser.tags[parser.tags.length - 1] || parser;
+      const parent = parser.tags[parser.tags.length - 1] || parser;
       if (tag.ns && parent.ns !== tag.ns) {
         Object.keys(tag.ns).forEach(function (p) {
           emitNode(parser, "onopennamespace", {
@@ -1003,15 +1003,15 @@ const sax: unknown = {};
       // handle deferred onattribute events
       // Note: do not apply default ns to attributes:
       //   http://www.w3.org/TR/REC-xml-names/#defaulting
-      for (var i = 0, l = parser.attribList.length; i < l; i++) {
-        var nv = parser.attribList[i];
-        var name = nv[0];
-        var value = nv[1];
-        var qualName = qname(name, true);
-        var prefix = qualName.prefix;
-        var local = qualName.local;
-        var uri = prefix === "" ? "" : tag.ns[prefix] || "";
-        var a = {
+      for (let i = 0, l = parser.attribList.length; i < l; i++) {
+        const nv = parser.attribList[i];
+        const name = nv[0];
+        const value = nv[1];
+        const qualName = qname(name, true);
+        const prefix = qualName.prefix;
+        const local = qualName.local;
+        const uri = prefix === "" ? "" : tag.ns[prefix] || "";
+        const a = {
           name: name,
           value: value,
           prefix: prefix,
@@ -1075,14 +1075,14 @@ const sax: unknown = {};
 
     // first make sure that the closing tag actually exists.
     // <a><b></c></b></a> will close everything, otherwise.
-    var t = parser.tags.length;
-    var tagName = parser.tagName;
+    let t = parser.tags.length;
+    let tagName = parser.tagName;
     if (!parser.strict) {
       tagName = tagName[parser.looseCase]();
     }
-    var closeTo = tagName;
+    const closeTo = tagName;
     while (t--) {
-      var close = parser.tags[t];
+      const close = parser.tags[t];
       if (close.name !== closeTo) {
         // fail the first time in strict mode
         strictFail(parser, "Unexpected close tag");
@@ -1099,22 +1099,22 @@ const sax: unknown = {};
       return;
     }
     parser.tagName = tagName;
-    var s = parser.tags.length;
+    let s = parser.tags.length;
     while (s-- > t) {
-      var tag = (parser.tag = parser.tags.pop());
+      const tag = (parser.tag = parser.tags.pop());
       parser.tagName = parser.tag.name;
       emitNode(parser, "onclosetag", parser.tagName);
 
-      var x = {};
-      for (var i in tag.ns) {
+      const x = {};
+      for (const i in tag.ns) {
         x[i] = tag.ns[i];
       }
 
-      var parent = parser.tags[parser.tags.length - 1] || parser;
+      const parent = parser.tags[parser.tags.length - 1] || parser;
       if (parser.opt.xmlns && tag.ns !== parent.ns) {
         // remove namespace bindings introduced by tag
         Object.keys(tag.ns).forEach(function (p) {
-          var n = tag.ns[p];
+          const n = tag.ns[p];
           emitNode(parser, "onclosenamespace", { prefix: p, uri: n });
         });
       }
@@ -1126,10 +1126,10 @@ const sax: unknown = {};
   }
 
   function parseEntity(parser) {
-    var entity = parser.entity;
-    var entityLC = entity.toLowerCase();
-    var num;
-    var numStr = "";
+    let entity = parser.entity;
+    const entityLC = entity.toLowerCase();
+    let num;
+    let numStr = "";
 
     if (parser.ENTITIES[entity]) {
       return parser.ENTITIES[entity];
@@ -1177,7 +1177,7 @@ const sax: unknown = {};
   }
 
   function charAt(chunk, i) {
-    var result = "";
+    let result = "";
     if (i < chunk.length) {
       result = chunk.charAt(i);
     }
@@ -1185,7 +1185,7 @@ const sax: unknown = {};
   }
 
   function write(chunk) {
-    var parser = this;
+    const parser = this;
     if (this.error) {
       throw this.error;
     }
@@ -1201,8 +1201,8 @@ const sax: unknown = {};
     if (typeof chunk === "object") {
       chunk = chunk.toString();
     }
-    var i = 0;
-    var c = "";
+    let i = 0;
+    let c = "";
     while (true) {
       c = charAt(chunk, i++);
       parser.c = c;
@@ -1307,7 +1307,7 @@ const sax: unknown = {};
             strictFail(parser, "Unencoded <");
             // if there was some whitespace, then add that in.
             if (parser.startTagPosition + 1 < parser.position) {
-              var pad = parser.position - parser.startTagPosition;
+              const pad = parser.position - parser.startTagPosition;
               c = new Array(pad).join(" ") + c;
             }
             parser.textNode += "<" + c;
@@ -1722,8 +1722,8 @@ const sax: unknown = {};
         case S.TEXT_ENTITY:
         case S.ATTRIB_VALUE_ENTITY_Q:
         case S.ATTRIB_VALUE_ENTITY_U:
-          var returnState;
-          var buffer;
+          let returnState;
+          let buffer;
           switch (parser.state) {
             case S.TEXT_ENTITY:
               returnState = S.TEXT;
@@ -1742,7 +1742,7 @@ const sax: unknown = {};
           }
 
           if (c === ";") {
-            var parsedEntity = parseEntity(parser);
+            const parsedEntity = parseEntity(parser);
             if (
               parser.opt.unparsedEntities &&
               !Object.values(sax.XML_ENTITIES).includes(parsedEntity)

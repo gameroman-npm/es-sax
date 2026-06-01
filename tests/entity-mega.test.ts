@@ -2,9 +2,9 @@ import sax from "es-sax";
 
 import { test } from "./index.ts";
 
-var xml = "<r>";
-var text = "";
-for (var i in sax.ENTITIES) {
+let xml = "<r>";
+let text = "";
+for (const i in sax.ENTITIES) {
   xml += "&" + i + ";";
   text += sax.ENTITIES[i];
 }
