@@ -3,9 +3,7 @@ import {
   DOCTYPE,
   ENTITIES,
   EVENTS,
-  XMLNS_NAMESPACE,
   XML_ENTITIES,
-  XML_NAMESPACE,
   entityBody,
   entityStart,
   nameBody,
@@ -13,21 +11,25 @@ import {
   rootNS,
 } from "./constants";
 import {
+  attrib,
+  beginWhiteSpace,
   checkBufferLength,
   clearBuffers,
+  closeTag,
   closeText,
   emit,
   emitNode,
   error,
   flushBuffers,
   newTag,
+  strictFail,
+  validateXmlDeclarationEncoding,
 } from "./parser";
+import { STATE } from "./state";
 import Stream from "./stream";
 import {
   charAt,
   determineBufferEncoding,
-  encodingsMatch,
-  getDeclaredEncoding,
   isAttribEnd,
   isMatch,
   isQuote,
@@ -40,6 +42,27 @@ import {
 const sax: unknown = {};
 
 (function (sax) {
+  // When we pass the MAX_BUFFER_LENGTH position, start checking for buffer overruns.
+  // When we check, schedule the next check for MAX_BUFFER_LENGTH - (max(buffer lengths)),
+  // since that's the earliest that a buffer overrun could occur.  This way, checks are
+  // as rare as required, but as often as necessary to ensure never crossing this bound.
+  // Furthermore, buffers are only tested at most once per write(), so passing a very
+  // large string into write() might have undesirable effects, but this is manageable by
+  // the caller, so it is assumed to be safe.  Thus, a call to write() may, in the extreme
+  // edge case, result in creating at most one complete copy of the string passed in.
+  // Set to Infinity to have unlimited buffers.
+  sax.MAX_BUFFER_LENGTH = 64 * 1024;
+
+  sax.ENTITIES = ENTITIES;
+
+  sax.EVENTS = EVENTS;
+
+  sax.XML_ENTITIES = XML_ENTITIES;
+
+  const streamWraps = sax.EVENTS.filter(function (ev) {
+    return ev !== "error" && ev !== "end";
+  });
+
   function SAXParser(strict, opt) {
     if (!(this instanceof SAXParser)) {
       return new SAXParser(strict, opt);
@@ -232,74 +255,16 @@ const sax: unknown = {};
   sax.parser = function (strict, opt) {
     return new SAXParser(strict, opt);
   };
-  sax.SAXParser = SAXParser;
-  sax.SAXStream = SAXStream;
-  sax.createStream = createStream;
-
-  // When we pass the MAX_BUFFER_LENGTH position, start checking for buffer overruns.
-  // When we check, schedule the next check for MAX_BUFFER_LENGTH - (max(buffer lengths)),
-  // since that's the earliest that a buffer overrun could occur.  This way, checks are
-  // as rare as required, but as often as necessary to ensure never crossing this bound.
-  // Furthermore, buffers are only tested at most once per write(), so passing a very
-  // large string into write() might have undesirable effects, but this is manageable by
-  // the caller, so it is assumed to be safe.  Thus, a call to write() may, in the extreme
-  // edge case, result in creating at most one complete copy of the string passed in.
-  // Set to Infinity to have unlimited buffers.
-  sax.MAX_BUFFER_LENGTH = 64 * 1024;
-
-  sax.EVENTS = EVENTS;
-
-  const streamWraps = sax.EVENTS.filter(function (ev) {
-    return ev !== "error" && ev !== "end";
-  });
 
   function createStream(strict, opt) {
     return new SAXStream(strict, opt);
   }
 
-  let S = 0;
-  sax.STATE = {
-    BEGIN: S++, // leading byte order mark or whitespace
-    BEGIN_WHITESPACE: S++, // leading whitespace
-    TEXT: S++, // general stuff
-    TEXT_ENTITY: S++, // &amp and such.
-    OPEN_WAKA: S++, // <
-    SGML_DECL: S++, // <!BLARG
-    SGML_DECL_QUOTED: S++, // <!BLARG foo "bar
-    DOCTYPE: S++, // <!DOCTYPE
-    DOCTYPE_QUOTED: S++, // <!DOCTYPE "//blah
-    DOCTYPE_DTD: S++, // <!DOCTYPE "//blah" [ ...
-    DOCTYPE_DTD_QUOTED: S++, // <!DOCTYPE "//blah" [ "foo
-    COMMENT_STARTING: S++, // <!-
-    COMMENT: S++, // <!--
-    COMMENT_ENDING: S++, // <!-- blah -
-    COMMENT_ENDED: S++, // <!-- blah --
-    CDATA: S++, // <![CDATA[ something
-    CDATA_ENDING: S++, // ]
-    CDATA_ENDING_2: S++, // ]]
-    PROC_INST: S++, // <?hi
-    PROC_INST_BODY: S++, // <?hi there
-    PROC_INST_ENDING: S++, // <?hi "there" ?
-    OPEN_TAG: S++, // <strong
-    OPEN_TAG_SLASH: S++, // <strong /
-    ATTRIB: S++, // <a
-    ATTRIB_NAME: S++, // <a foo
-    ATTRIB_NAME_SAW_WHITE: S++, // <a foo _
-    ATTRIB_VALUE: S++, // <a foo=
-    ATTRIB_VALUE_QUOTED: S++, // <a foo="bar
-    ATTRIB_VALUE_CLOSED: S++, // <a foo="bar"
-    ATTRIB_VALUE_UNQUOTED: S++, // <a foo=bar
-    ATTRIB_VALUE_ENTITY_Q: S++, // <foo bar="&quot;"
-    ATTRIB_VALUE_ENTITY_U: S++, // <foo bar=&quot
-    CLOSE_TAG: S++, // </a
-    CLOSE_TAG_SAW_WHITE: S++, // </a   >
-    SCRIPT: S++, // <script> ...
-    SCRIPT_ENDING: S++, // <script> ... <
-  };
+  sax.SAXParser = SAXParser;
+  sax.SAXStream = SAXStream;
+  sax.createStream = createStream;
 
-  sax.XML_ENTITIES = XML_ENTITIES;
-
-  sax.ENTITIES = ENTITIES;
+  sax.STATE = STATE;
 
   Object.keys(sax.ENTITIES).forEach(function (key) {
     const e = sax.ENTITIES[key];
@@ -312,27 +277,7 @@ const sax: unknown = {};
   }
 
   // shorthand
-  S = sax.STATE;
-
-  function validateXmlDeclarationEncoding(parser, data) {
-    if (!parser.strict || !parser.encoding || !data || data.name !== "xml") {
-      return;
-    }
-
-    const declaredEncoding = getDeclaredEncoding(data.body);
-    if (
-      declaredEncoding &&
-      !encodingsMatch(parser.encoding, declaredEncoding)
-    ) {
-      strictFail(
-        parser,
-        "XML declaration encoding " +
-          declaredEncoding +
-          " does not match detected stream encoding " +
-          parser.encoding.toUpperCase(),
-      );
-    }
-  }
+  const S = sax.STATE;
 
   function end(parser) {
     if (parser.sawRoot && !parser.closedRoot)
@@ -350,82 +295,6 @@ const sax: unknown = {};
     emit(parser, "onend");
     SAXParser.call(parser, parser.strict, parser.opt);
     return parser;
-  }
-
-  function strictFail(parser, message) {
-    if (typeof parser !== "object" || !(parser instanceof SAXParser)) {
-      throw new Error("bad call to strictFail");
-    }
-    if (parser.strict) {
-      error(parser, message);
-    }
-  }
-
-  function attrib(parser) {
-    if (!parser.strict) {
-      parser.attribName = parser.attribName[parser.looseCase]();
-    }
-
-    if (
-      parser.attribList.indexOf(parser.attribName) !== -1 ||
-      parser.tag.attributes.hasOwnProperty(parser.attribName)
-    ) {
-      parser.attribName = parser.attribValue = "";
-      return;
-    }
-
-    if (parser.opt.xmlns) {
-      const qn = qname(parser.attribName, true);
-      const prefix = qn.prefix;
-      const local = qn.local;
-
-      if (prefix === "xmlns") {
-        // namespace binding attribute. push the binding into scope
-        if (local === "xml" && parser.attribValue !== XML_NAMESPACE) {
-          strictFail(
-            parser,
-            "xml: prefix must be bound to " +
-              XML_NAMESPACE +
-              "\n" +
-              "Actual: " +
-              parser.attribValue,
-          );
-        } else if (
-          local === "xmlns" &&
-          parser.attribValue !== XMLNS_NAMESPACE
-        ) {
-          strictFail(
-            parser,
-            "xmlns: prefix must be bound to " +
-              XMLNS_NAMESPACE +
-              "\n" +
-              "Actual: " +
-              parser.attribValue,
-          );
-        } else {
-          const tag = parser.tag;
-          const parent = parser.tags[parser.tags.length - 1] || parser;
-          if (tag.ns === parent.ns) {
-            tag.ns = Object.create(parent.ns);
-          }
-          tag.ns[local] = parser.attribValue;
-        }
-      }
-
-      // defer onattribute events until all attributes have been seen
-      // so any new bindings can take effect. preserve attribute order
-      // so deferred events can be emitted in document order
-      parser.attribList.push([parser.attribName, parser.attribValue]);
-    } else {
-      // in non-xmlns mode, we can emit the event right away
-      parser.tag.attributes[parser.attribName] = parser.attribValue;
-      emitNode(parser, "onattribute", {
-        name: parser.attribName,
-        value: parser.attribValue,
-      });
-    }
-
-    parser.attribName = parser.attribValue = "";
   }
 
   function openTag(parser, selfClosing?) {
@@ -511,77 +380,6 @@ const sax: unknown = {};
     parser.attribList.length = 0;
   }
 
-  function closeTag(parser) {
-    if (!parser.tagName) {
-      strictFail(parser, "Weird empty close tag.");
-      parser.textNode += "</>";
-      parser.state = S.TEXT;
-      return;
-    }
-
-    if (parser.script) {
-      if (parser.tagName !== "script") {
-        parser.script += "</" + parser.tagName + ">";
-        parser.tagName = "";
-        parser.state = S.SCRIPT;
-        return;
-      }
-      emitNode(parser, "onscript", parser.script);
-      parser.script = "";
-    }
-
-    // first make sure that the closing tag actually exists.
-    // <a><b></c></b></a> will close everything, otherwise.
-    let t = parser.tags.length;
-    let tagName = parser.tagName;
-    if (!parser.strict) {
-      tagName = tagName[parser.looseCase]();
-    }
-    const closeTo = tagName;
-    while (t--) {
-      const close = parser.tags[t];
-      if (close.name !== closeTo) {
-        // fail the first time in strict mode
-        strictFail(parser, "Unexpected close tag");
-      } else {
-        break;
-      }
-    }
-
-    // didn't find it.  we already failed for strict, so just abort.
-    if (t < 0) {
-      strictFail(parser, "Unmatched closing tag: " + parser.tagName);
-      parser.textNode += "</" + parser.tagName + ">";
-      parser.state = S.TEXT;
-      return;
-    }
-    parser.tagName = tagName;
-    let s = parser.tags.length;
-    while (s-- > t) {
-      const tag = (parser.tag = parser.tags.pop());
-      parser.tagName = parser.tag.name;
-      emitNode(parser, "onclosetag", parser.tagName);
-
-      const x = {};
-      for (const i in tag.ns) {
-        x[i] = tag.ns[i];
-      }
-
-      const parent = parser.tags[parser.tags.length - 1] || parser;
-      if (parser.opt.xmlns && tag.ns !== parent.ns) {
-        // remove namespace bindings introduced by tag
-        Object.keys(tag.ns).forEach(function (p) {
-          const n = tag.ns[p];
-          emitNode(parser, "onclosenamespace", { prefix: p, uri: n });
-        });
-      }
-    }
-    if (t === 0) parser.closedRoot = true;
-    parser.tagName = parser.attribValue = parser.attribName = "";
-    parser.attribList.length = 0;
-    parser.state = S.TEXT;
-  }
-
   function parseEntity(parser) {
     let entity = parser.entity;
     const entityLC = entity.toLowerCase();
@@ -618,19 +416,6 @@ const sax: unknown = {};
     }
 
     return String.fromCodePoint(num);
-  }
-
-  function beginWhiteSpace(parser, c) {
-    if (c === "<") {
-      parser.state = S.OPEN_WAKA;
-      parser.startTagPosition = parser.position;
-    } else if (!isWhitespace(c)) {
-      // have to process this as a text node.
-      // weird, but happens.
-      strictFail(parser, "Non-whitespace before first tag.");
-      parser.textNode = c;
-      parser.state = S.TEXT;
-    }
   }
 
   function write(chunk) {
