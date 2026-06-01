@@ -1,4 +1,6 @@
-require(__dirname).test({
+import { test } from "./index.ts";
+
+test({
   xml: "<root>abc</root>de<f",
   expect: [
     [
@@ -24,7 +26,7 @@ require(__dirname).test({
   opt: {},
 });
 
-require(__dirname).test({
+test({
   xml: "<root>abc</root>de<f",
   expect: [
     [

@@ -1,4 +1,6 @@
-require(__dirname).test({
+import { test } from "./index.ts";
+
+test({
   xml: "<root length='12345'></root>",
   expect: [
     [
@@ -47,7 +49,7 @@ require(__dirname).test({
   },
 });
 
-require(__dirname).test({
+test({
   xml: "<root length='12345'></root>",
   expect: [
     [

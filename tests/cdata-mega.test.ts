@@ -1,3 +1,5 @@
+import { test } from "./index.ts";
+
 var process = require("process");
 var t = require("tap");
 var sax = require("../lib/sax");

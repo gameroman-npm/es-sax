@@ -1,3 +1,5 @@
+import { test } from "./index.ts";
+
 /**
  * @fileoverview
  *   See: https://en.wikipedia.org/wiki/Billion_laughs_attack

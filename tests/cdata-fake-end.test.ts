@@ -1,4 +1,6 @@
-var p = require(__dirname).test({
+import { test } from "./index.ts";
+
+var p = test({
   expect: [
     ["opentagstart", { name: "R", attributes: {} }],
     ["opentag", { name: "R", attributes: {}, isSelfClosing: false }],
@@ -14,7 +16,7 @@ for (var i = 0; i < x.length; i++) {
 }
 p.close();
 
-var p2 = require(__dirname).test({
+var p2 = test({
   expect: [
     ["opentagstart", { name: "R", attributes: {} }],
     ["opentag", { name: "R", attributes: {}, isSelfClosing: false }],

@@ -1,3 +1,5 @@
+import { test } from "./index.ts";
+
 var xmlnsAttr = {
   name: "xmlns",
   value: "http://foo",
@@ -14,7 +16,7 @@ var attrAttr = {
   uri: "",
 };
 
-require(__dirname).test({
+test({
   xml: "<elm xmlns='http://foo' attr='bar'/>",
   expect: [
     [

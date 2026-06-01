@@ -1,3 +1,5 @@
+import { test } from "./index.ts";
+
 var t = require(__dirname);
 
 // should be the same both ways.

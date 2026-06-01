@@ -1,4 +1,6 @@
-require(__dirname).test({
+import { test } from "./index.ts";
+
+test({
   xml: "<html><head><script>if (1 < 0) { console.log('elo there'); }</script></head></html>",
   expect: [
     [

@@ -1,5 +1,7 @@
+import { test } from "./index.ts";
+
 // https://github.com/isaacs/sax-js/issues/84
-require(__dirname).test({
+test({
   xml: '<?has unbalanced "quotes?><xml>body</xml>',
   expect: [
     ["processinginstruction", { name: "has", body: 'unbalanced "quotes' }],

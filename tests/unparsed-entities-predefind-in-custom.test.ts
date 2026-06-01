@@ -1,8 +1,10 @@
+import { test } from "./index.ts";
+
 var sax = require("../lib/sax");
 sax.ENTITIES.entity_reference = "<text>entity reference</text>";
 sax.ENTITIES.escaped_entity_reference =
   "&lt;text&gt;escaped entity reference&lt;/text&gt;";
-require(__dirname).test({
+test({
   opt: { unparsedEntities: true },
   xml:
     "<svg>" +

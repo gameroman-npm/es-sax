@@ -1,5 +1,7 @@
+import { test } from "./index.ts";
+
 // https://github.com/isaacs/sax-js/issues/33
-require(__dirname).test({
+test({
   xml:
     "<xml>\n" +
     "<!-- \n" +

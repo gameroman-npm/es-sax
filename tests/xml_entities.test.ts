@@ -1,4 +1,6 @@
-require(__dirname).test({
+import { test } from "./index.ts";
+
+test({
   opt: { strictEntities: true },
   xml:
     "<r>&rfloor; " +

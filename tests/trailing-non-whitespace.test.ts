@@ -1,4 +1,6 @@
-require(__dirname).test({
+import { test } from "./index.ts";
+
+test({
   xml: "<span>Welcome,</span> to monkey land",
   expect: [
     [

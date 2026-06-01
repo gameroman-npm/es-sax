@@ -1,4 +1,6 @@
-var parser = require(__dirname).test({
+import { test } from "./index.ts";
+
+var parser = test({
   expect: [
     ["opentagstart", { name: "T", attributes: {} }],
     ["opentag", { name: "T", attributes: {}, isSelfClosing: false }],

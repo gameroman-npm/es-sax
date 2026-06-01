@@ -1,5 +1,7 @@
+import { test } from "./index.ts";
+
 // with entity
-require(__dirname).test({
+test({
   xml: '<!DOCTYPE svg [ <!ENTITY ns_graphs "http://ns.adobe.com/Graphs/1.0/"> ]><svg></svg>',
   expect: [
     [
@@ -13,7 +15,7 @@ require(__dirname).test({
 });
 
 // with comment
-require(__dirname).test({
+test({
   xml: "<!DOCTYPE svg [<!--comment with ' and ] symbols-->]><svg></svg>",
   expect: [
     ["comment", "comment with ' and ] symbols"],
@@ -25,7 +27,7 @@ require(__dirname).test({
 });
 
 // with entity and comment
-require(__dirname).test({
+test({
   xml: '<!DOCTYPE svg [<!--comment with \' and ] symbols--> <!ENTITY ns_graphs "http://ns.adobe.com/Graphs/1.0/"> ]><svg></svg>',
   expect: [
     ["comment", "comment with ' and ] symbols"],
@@ -40,7 +42,7 @@ require(__dirname).test({
 });
 
 // with empty doctype
-require(__dirname).test({
+test({
   xml: "<!DOCTYPE svg []><svg></svg>",
   expect: [
     ["doctype", " svg []"],

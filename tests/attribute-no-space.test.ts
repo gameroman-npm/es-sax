@@ -1,5 +1,7 @@
+import { test } from "./index.ts";
+
 // non-strict: no error
-require(__dirname).test({
+test({
   xml: '<root attr1="first"attr2="second"/>',
   expect: [
     ["opentagstart", { name: "root", attributes: {} }],
@@ -20,7 +22,7 @@ require(__dirname).test({
 });
 
 // strict: should give an error, but still parse
-require(__dirname).test({
+test({
   xml: '<root attr1="first"attr2="second"/>',
   expect: [
     ["opentagstart", { name: "root", attributes: {} }],
@@ -42,7 +44,7 @@ require(__dirname).test({
 });
 
 // strict: other cases should still pass
-require(__dirname).test({
+test({
   xml: '<root attr1="first" attr2="second"/>',
   expect: [
     ["opentagstart", { name: "root", attributes: {} }],
@@ -63,7 +65,7 @@ require(__dirname).test({
 });
 
 // strict: other cases should still pass
-require(__dirname).test({
+test({
   xml: '<root attr1="first"\nattr2="second"/>',
   expect: [
     ["opentagstart", { name: "root", attributes: {} }],
@@ -84,7 +86,7 @@ require(__dirname).test({
 });
 
 // strict: other cases should still pass
-require(__dirname).test({
+test({
   xml: '<root attr1="first"  attr2="second"/>',
   expect: [
     ["opentagstart", { name: "root", attributes: {} }],

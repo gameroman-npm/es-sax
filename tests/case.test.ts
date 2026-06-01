@@ -1,5 +1,7 @@
+import { test } from "./index.ts";
+
 // default to uppercase
-require(__dirname).test({
+test({
   xml: '<span class="test" hello="world"></span>',
   expect: [
     [
@@ -26,7 +28,7 @@ require(__dirname).test({
 });
 
 // lowercase option : lowercase tag/attribute names
-require(__dirname).test({
+test({
   xml: '<span class="test" hello="world"></span>',
   expect: [
     [
@@ -53,7 +55,7 @@ require(__dirname).test({
 });
 
 // backward compatibility with old lowercasetags opt
-require(__dirname).test({
+test({
   xml: '<span class="test" hello="world"></span>',
   expect: [
     [

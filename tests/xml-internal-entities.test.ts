@@ -1,3 +1,5 @@
+import { test } from "./index.ts";
+
 var iExpect = [];
 var myAttributes = {};
 var ENTITIES = {};
@@ -81,7 +83,7 @@ iExpect.push([
 ]);
 iExpect.push(["closetag", "a"]);
 
-var parser = require(__dirname).test({
+var parser = test({
   strict: true,
   expect: iExpect,
 });

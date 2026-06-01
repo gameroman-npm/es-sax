@@ -1,5 +1,6 @@
-require(__dirname)
-  .test({
+import { test } from "./index.ts";
+
+test({
     strict: true,
     opt: { xmlns: true },
     expect: [

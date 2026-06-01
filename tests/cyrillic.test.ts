@@ -1,4 +1,6 @@
-require(__dirname).test({
+import { test } from "./index.ts";
+
+test({
   xml: "<Р>тест</Р>",
   expect: [
     ["opentagstart", { name: "Р", attributes: {} }],

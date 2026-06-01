@@ -1,6 +1,8 @@
+import { test } from "./index.ts";
+
 // stray ending tags should just be ignored in non-strict mode.
 // https://github.com/isaacs/sax-js/issues/32
-require(__dirname).test({
+test({
   xml: "<a><b></c></b></a>",
   expect: [
     [

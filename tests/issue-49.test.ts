@@ -1,5 +1,7 @@
+import { test } from "./index.ts";
+
 // https://github.com/isaacs/sax-js/issues/49
-require(__dirname).test({
+test({
   xml: "<xml><script>hello world</script></xml>",
   expect: [
     ["opentagstart", { name: "xml", attributes: {} }],
@@ -14,7 +16,7 @@ require(__dirname).test({
   opt: { lowercasetags: true, noscript: true },
 });
 
-require(__dirname).test({
+test({
   xml: "<xml><script><![CDATA[hello world]]></script></xml>",
   expect: [
     ["opentagstart", { name: "xml", attributes: {} }],

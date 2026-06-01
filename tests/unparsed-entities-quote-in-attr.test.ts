@@ -1,4 +1,6 @@
-require(__dirname).test({
+import { test } from "./index.ts";
+
+test({
   opt: { unparsedEntities: true },
   xml: '<doc a="&#34;">' + "</doc>",
   expect: [

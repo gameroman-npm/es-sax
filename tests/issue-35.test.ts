@@ -1,5 +1,7 @@
+import { test } from "./index.ts";
+
 // https://github.com/isaacs/sax-js/issues/35
-require(__dirname).test({
+test({
   xml: "<xml>&#Xd;&#X0d;\n</xml>",
   expect: [
     ["opentagstart", { name: "xml", attributes: {} }],

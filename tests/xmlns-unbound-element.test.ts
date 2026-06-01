@@ -1,5 +1,6 @@
-require(__dirname)
-  .test({
+import { test } from "./index.ts";
+
+test({
     strict: true,
     opt: { xmlns: true },
     expect: [
@@ -32,8 +33,7 @@ require(__dirname)
   })
   .write("<unbound:root/>");
 
-require(__dirname)
-  .test({
+test({
     strict: true,
     opt: {
       xmlns: true,

@@ -1,5 +1,7 @@
+import { test } from "./index.ts";
+
 // strict: true
-require(__dirname).test({
+test({
   xml: "<svg width=20px height=20px />",
   expect: [
     ["opentagstart", { name: "svg", attributes: {} }],
@@ -24,7 +26,7 @@ require(__dirname).test({
 });
 
 // strict: false
-require(__dirname).test({
+test({
   xml: "<svg width=20px height=20px />",
   expect: [
     ["opentagstart", { name: "SVG", attributes: {} }],
@@ -47,7 +49,7 @@ require(__dirname).test({
 });
 
 // strict: true, opt: { unquotedAttributeValues: true }
-require(__dirname).test({
+test({
   xml: "<svg width=20px height=20px />",
   expect: [
     ["opentagstart", { name: "svg", attributes: {} }],
@@ -73,7 +75,7 @@ require(__dirname).test({
 });
 
 // strict: false, opt: { unquotedAttributeValues: true }
-require(__dirname).test({
+test({
   xml: "<svg width=20px height=20px />",
   expect: [
     ["opentagstart", { name: "SVG", attributes: {} }],

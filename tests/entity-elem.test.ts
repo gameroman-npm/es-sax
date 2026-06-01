@@ -1,8 +1,10 @@
+import { test } from "./index.ts";
+
 var sax = require("../");
 sax.ENTITIES.attr = "1";
 sax.ENTITIES.text = "2.&attr;";
 sax.ENTITIES.elem = '<B ATTR="&attr;.3"/>';
-require(__dirname).test({
+test({
   opt: { unparsedEntities: true },
   xml: `<A ATTR="&attr;.2">&text;&elem;</A>`,
   expect: [

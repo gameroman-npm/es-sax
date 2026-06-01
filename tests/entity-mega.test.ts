@@ -1,3 +1,5 @@
+import { test } from "./index.ts";
+
 var sax = require("../");
 var xml = "<r>";
 var text = "";
@@ -6,7 +8,7 @@ for (var i in sax.ENTITIES) {
   text += sax.ENTITIES[i];
 }
 xml += "</r>";
-require(__dirname).test({
+test({
   xml: xml,
   expect: [
     ["opentagstart", { name: "R", attributes: {} }],

@@ -1,6 +1,8 @@
+import { test } from "./index.ts";
+
 var sax = require("../");
 sax.ENTITIES.elem = "<B/>";
-require(__dirname).test({
+test({
   opt: { unparsedEntities: true },
   xml: `<A ATTR="&elem;"/>`,
   expect: [

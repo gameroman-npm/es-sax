@@ -1,5 +1,7 @@
+import { test } from "./index.ts";
+
 // split high-order numeric attributes into surrogate pairs
-require(__dirname).test({
+test({
   xml: "<a>&#x1f525;</a>",
   expect: [
     ["opentagstart", { name: "A", attributes: {} }],
