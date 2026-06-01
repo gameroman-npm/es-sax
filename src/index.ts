@@ -90,6 +90,54 @@ const sax: unknown = {};
     "closenamespace",
   ];
 
+  function checkBufferLength(parser) {
+    const maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10);
+    let maxActual = 0;
+    for (let i = 0, l = buffers.length; i < l; i++) {
+      const len = parser[buffers[i]].length;
+      if (len > maxAllowed) {
+        // Text/cdata nodes can get big, and since they're buffered,
+        // we can get here under normal conditions.
+        // Avoid issues by emitting the text node now,
+        // so at least it won't get any bigger.
+        switch (buffers[i]) {
+          case "textNode":
+            closeText(parser);
+            break;
+
+          case "cdata":
+            emitNode(parser, "oncdata", parser.cdata);
+            parser.cdata = "";
+            break;
+
+          case "script":
+            emitNode(parser, "onscript", parser.script);
+            parser.script = "";
+            break;
+
+          default:
+            error(parser, "Max buffer length exceeded: " + buffers[i]);
+        }
+      }
+      maxActual = Math.max(maxActual, len);
+    }
+    // schedule the next check for the earliest possible buffer overrun.
+    const m = sax.MAX_BUFFER_LENGTH - maxActual;
+    parser.bufferCheckPosition = m + parser.position;
+  }
+
+  let Stream;
+  try {
+    Stream = require("node:stream").Stream;
+  } catch {
+    Stream = function () {};
+  }
+  if (!Stream) Stream = function () {};
+
+  const streamWraps = sax.EVENTS.filter(function (ev) {
+    return ev !== "error" && ev !== "end";
+  });
+
   function SAXParser(strict, opt) {
     if (!(this instanceof SAXParser)) {
       return new SAXParser(strict, opt);
@@ -139,59 +187,6 @@ const sax: unknown = {};
     emit(parser, "onready");
   }
 
-  if (!Object.create) {
-    Object.create = function (o) {
-      function F() {}
-      F.prototype = o;
-      const newf = new F();
-      return newf;
-    };
-  }
-
-  if (!Object.keys) {
-    Object.keys = function (o) {
-      const a = [];
-      for (const i in o) if (o.hasOwnProperty(i)) a.push(i);
-      return a;
-    };
-  }
-
-  function checkBufferLength(parser) {
-    const maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10);
-    let maxActual = 0;
-    for (let i = 0, l = buffers.length; i < l; i++) {
-      const len = parser[buffers[i]].length;
-      if (len > maxAllowed) {
-        // Text/cdata nodes can get big, and since they're buffered,
-        // we can get here under normal conditions.
-        // Avoid issues by emitting the text node now,
-        // so at least it won't get any bigger.
-        switch (buffers[i]) {
-          case "textNode":
-            closeText(parser);
-            break;
-
-          case "cdata":
-            emitNode(parser, "oncdata", parser.cdata);
-            parser.cdata = "";
-            break;
-
-          case "script":
-            emitNode(parser, "onscript", parser.script);
-            parser.script = "";
-            break;
-
-          default:
-            error(parser, "Max buffer length exceeded: " + buffers[i]);
-        }
-      }
-      maxActual = Math.max(maxActual, len);
-    }
-    // schedule the next check for the earliest possible buffer overrun.
-    const m = sax.MAX_BUFFER_LENGTH - maxActual;
-    parser.bufferCheckPosition = m + parser.position;
-  }
-
   SAXParser.prototype = {
     end: function () {
       end(this);
@@ -208,18 +203,6 @@ const sax: unknown = {};
       flushBuffers(this);
     },
   };
-
-  let Stream;
-  try {
-    Stream = require("node:stream").Stream;
-  } catch {
-    Stream = function () {};
-  }
-  if (!Stream) Stream = function () {};
-
-  const streamWraps = sax.EVENTS.filter(function (ev) {
-    return ev !== "error" && ev !== "end";
-  });
 
   function createStream(strict, opt) {
     return new SAXStream(strict, opt);
