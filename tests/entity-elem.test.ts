@@ -1,6 +1,7 @@
 import { test } from "./index.ts";
 
-var sax = require("../");
+import sax from "es-sax";
+
 sax.ENTITIES.attr = "1";
 sax.ENTITIES.text = "2.&attr;";
 sax.ENTITIES.elem = '<B ATTR="&attr;.3"/>';

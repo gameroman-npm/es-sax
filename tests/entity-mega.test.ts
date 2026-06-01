@@ -1,6 +1,7 @@
 import { test } from "./index.ts";
 
-var sax = require("../");
+import sax from "es-sax";
+
 var xml = "<r>";
 var text = "";
 for (var i in sax.ENTITIES) {

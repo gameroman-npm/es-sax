@@ -1,6 +1,7 @@
 import { test } from "./index.ts";
 
-var sax = require("../");
+import sax from "es-sax";
+
 sax.ENTITIES.elem = "<B/>";
 test({
   opt: { unparsedEntities: true },
