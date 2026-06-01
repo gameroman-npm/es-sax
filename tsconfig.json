@@ -1,7 +1,12 @@
 {
-  "extends": "@gameroman/config/tsconfig/isolated",
+  "extends": "@gameroman/config/ts/isolated",
+
   "compilerOptions": {
-    "types": ["bun"]
+    "emitDeclarationOnly": true,
+    "allowImportingTsExtensions": true,
+
+    "types": ["node"]
   },
-  "include": ["src"]
+
+  "include": ["src", "tests"]
 }

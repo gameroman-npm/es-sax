@@ -1,4 +1,6 @@
-const sax: unknown = (function (sax) {
+const sax: unknown = {};
+
+(function (sax) {
   // wrapper for non-node envs
   sax.parser = function (strict, opt) {
     return new SAXParser(strict, opt);
@@ -1838,6 +1840,6 @@ const sax: unknown = (function (sax) {
       }
     })();
   }
-})({});
+})(sax);
 
 export default sax;
