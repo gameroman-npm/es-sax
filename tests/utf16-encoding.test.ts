@@ -1,7 +1,8 @@
 import { test } from "./index.ts";
 
 var t = require("tap");
-var sax = require("../lib/sax");
+import sax from "es-sax";
+
 
 t.test("parses utf-16 xml streams when the declaration says UTF-16", (t) => {
   var stream = sax.createStream(true);

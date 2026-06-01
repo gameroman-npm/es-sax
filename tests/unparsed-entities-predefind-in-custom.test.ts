@@ -1,6 +1,7 @@
 import { test } from "./index.ts";
 
-var sax = require("../lib/sax");
+import sax from "es-sax";
+
 sax.ENTITIES.entity_reference = "<text>entity reference</text>";
 sax.ENTITIES.escaped_entity_reference =
   "&lt;text&gt;escaped entity reference&lt;/text&gt;";

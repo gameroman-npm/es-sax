@@ -2,7 +2,8 @@ import { test } from "./index.ts";
 
 var process = require("process");
 var t = require("tap");
-var sax = require("../lib/sax");
+import sax from "es-sax";
+
 
 t.test("cdata-mega", (t) => {
   var bytesInMiB = 1024 * 1024;

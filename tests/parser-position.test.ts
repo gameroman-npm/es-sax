@@ -1,6 +1,7 @@
 import { test } from "./index.ts";
 
-var sax = require("../lib/sax");
+import sax from "es-sax";
+
 var tap = require("tap");
 
 function testPosition(chunks, expectedEvents) {

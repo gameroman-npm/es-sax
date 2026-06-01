@@ -6,7 +6,8 @@ import { test } from "./index.ts";
  */
 
 var t = require("tap");
-var sax = require("../lib/sax");
+import sax from "es-sax";
+
 
 var ENTITIES = {
   lol: "lolz",
