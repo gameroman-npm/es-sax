@@ -75,4 +75,9 @@ const STATE: {
   SCRIPT_ENDING: S++, // <script> ... <
 } as const;
 
+for (const s in STATE) {
+  // @ts-expect-error
+  STATE[STATE[s]] = s;
+}
+
 export { STATE };

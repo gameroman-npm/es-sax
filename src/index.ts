@@ -1,9 +1,6 @@
 import {
   CDATA,
   DOCTYPE,
-  ENTITIES,
-  EVENTS,
-  XML_ENTITIES,
   entityBody,
   entityStart,
   nameBody,
@@ -22,10 +19,11 @@ import {
   error,
   flushBuffers,
   newTag,
+  parseEntity,
   strictFail,
   validateXmlDeclarationEncoding,
 } from "./parser";
-import { STATE } from "./state";
+import sax from "./sax";
 import Stream from "./stream";
 import {
   charAt,
@@ -39,26 +37,7 @@ import {
   textopts,
 } from "./util";
 
-const sax: unknown = {};
-
 (function (sax) {
-  // When we pass the MAX_BUFFER_LENGTH position, start checking for buffer overruns.
-  // When we check, schedule the next check for MAX_BUFFER_LENGTH - (max(buffer lengths)),
-  // since that's the earliest that a buffer overrun could occur.  This way, checks are
-  // as rare as required, but as often as necessary to ensure never crossing this bound.
-  // Furthermore, buffers are only tested at most once per write(), so passing a very
-  // large string into write() might have undesirable effects, but this is manageable by
-  // the caller, so it is assumed to be safe.  Thus, a call to write() may, in the extreme
-  // edge case, result in creating at most one complete copy of the string passed in.
-  // Set to Infinity to have unlimited buffers.
-  sax.MAX_BUFFER_LENGTH = 64 * 1024;
-
-  sax.ENTITIES = ENTITIES;
-
-  sax.EVENTS = EVENTS;
-
-  sax.XML_ENTITIES = XML_ENTITIES;
-
   const streamWraps = sax.EVENTS.filter(function (ev) {
     return ev !== "error" && ev !== "end";
   });
@@ -129,156 +108,6 @@ const sax: unknown = {};
     },
   };
 
-  class SAXStream extends Stream {
-    constructor(strict, opt) {
-      super();
-
-      this._parser = new SAXParser(strict, opt);
-      this.writable = true;
-      this.readable = true;
-
-      this._parser.onend = () => {
-        this.emit("end");
-      };
-
-      this._parser.onerror = (er) => {
-        this.emit("error", er);
-
-        // if didn't throw, then means error was handled.
-        // go ahead and clear error, so we can write again.
-        this._parser.error = null;
-      };
-
-      this._decoder = null;
-      this._decoderBuffer = null;
-
-      // Set up dynamic getters/setters for stream wraps
-      streamWraps.forEach((ev) => {
-        Object.defineProperty(this, "on" + ev, {
-          get: () => this._parser["on" + ev],
-          set: (h) => {
-            if (!h) {
-              this.removeAllListeners(ev);
-              this._parser["on" + ev] = h;
-              return h;
-            }
-            this.on(ev, h);
-          },
-          enumerable: true,
-          configurable: false,
-        });
-      });
-    }
-
-    _decodeBuffer(data, isEnd) {
-      if (this._decoderBuffer) {
-        // Keep incomplete leading bytes until we have enough data to infer the
-        // stream encoding, then decode the buffered prefix together with the next chunk.
-        data = Buffer.concat([this._decoderBuffer, data]);
-        this._decoderBuffer = null;
-      }
-
-      if (!this._decoder) {
-        const encoding = determineBufferEncoding(data, isEnd);
-        if (!encoding) {
-          // A very short first chunk may not contain enough bytes to detect the
-          // encoding yet, so defer decoding until the next write/end call.
-          this._decoderBuffer = data;
-          return "";
-        }
-
-        // Store the detected transport encoding so strict mode can compare it
-        // with the optional encoding declared in the XML prolog later on.
-        this._parser.encoding = encoding;
-        this._decoder = new TextDecoder(encoding);
-      }
-
-      return this._decoder.decode(data, { stream: !isEnd });
-    }
-
-    write(data) {
-      if (
-        typeof Buffer === "function" &&
-        typeof Buffer.isBuffer === "function" &&
-        Buffer.isBuffer(data)
-      ) {
-        data = this._decodeBuffer(data, false);
-      } else if (this._decoderBuffer) {
-        // Flush any buffered binary prefix before handling a string chunk.
-        // This only matters if the caller mixes Buffer and string writes (used in test).
-        const remaining = this._decodeBuffer(Buffer.alloc(0), true);
-        if (remaining) {
-          this._parser.write(remaining);
-          this.emit("data", remaining);
-        }
-      }
-
-      this._parser.write(data.toString());
-      this.emit("data", data);
-      return true;
-    }
-
-    end(chunk) {
-      if (chunk && chunk.length) {
-        this.write(chunk);
-      }
-      // Flush any remaining decoded data from the TextDecoder
-      if (this._decoderBuffer) {
-        const finalChunk = this._decodeBuffer(Buffer.alloc(0), true);
-        if (finalChunk) {
-          this._parser.write(finalChunk);
-          this.emit("data", finalChunk);
-        }
-      } else if (this._decoder) {
-        const remaining = this._decoder.decode();
-        if (remaining) {
-          this._parser.write(remaining);
-          this.emit("data", remaining);
-        }
-      }
-      this._parser.end();
-      return true;
-    }
-
-    on(ev, handler) {
-      if (!this._parser["on" + ev] && streamWraps.indexOf(ev) !== -1) {
-        this._parser["on" + ev] = (...args) => {
-          this.emit(ev, ...args);
-        };
-      }
-
-      return super.on(ev, handler);
-    }
-  }
-
-  // wrapper for non-node envs
-  sax.parser = function (strict, opt) {
-    return new SAXParser(strict, opt);
-  };
-
-  function createStream(strict, opt) {
-    return new SAXStream(strict, opt);
-  }
-
-  sax.SAXParser = SAXParser;
-  sax.SAXStream = SAXStream;
-  sax.createStream = createStream;
-
-  sax.STATE = STATE;
-
-  Object.keys(sax.ENTITIES).forEach(function (key) {
-    const e = sax.ENTITIES[key];
-    const s = typeof e === "number" ? String.fromCharCode(e) : e;
-    sax.ENTITIES[key] = s;
-  });
-
-  for (const s in sax.STATE) {
-    sax.STATE[sax.STATE[s]] = s;
-  }
-
-  // shorthand
-  const S = sax.STATE;
-
   function end(parser) {
     if (parser.sawRoot && !parser.closedRoot)
       strictFail(parser, "Unclosed root tag");
@@ -295,127 +124,6 @@ const sax: unknown = {};
     emit(parser, "onend");
     SAXParser.call(parser, parser.strict, parser.opt);
     return parser;
-  }
-
-  function openTag(parser, selfClosing?) {
-    if (parser.opt.xmlns) {
-      // emit namespace binding events
-      const tag = parser.tag;
-
-      // add namespace info to tag
-      const qn = qname(parser.tagName);
-      tag.prefix = qn.prefix;
-      tag.local = qn.local;
-      tag.uri = tag.ns[qn.prefix] || "";
-
-      if (tag.prefix && !tag.uri) {
-        strictFail(
-          parser,
-          "Unbound namespace prefix: " + JSON.stringify(parser.tagName),
-        );
-        tag.uri = qn.prefix;
-      }
-
-      const parent = parser.tags[parser.tags.length - 1] || parser;
-      if (tag.ns && parent.ns !== tag.ns) {
-        Object.keys(tag.ns).forEach(function (p) {
-          emitNode(parser, "onopennamespace", {
-            prefix: p,
-            uri: tag.ns[p],
-          });
-        });
-      }
-
-      // handle deferred onattribute events
-      // Note: do not apply default ns to attributes:
-      //   http://www.w3.org/TR/REC-xml-names/#defaulting
-      for (let i = 0, l = parser.attribList.length; i < l; i++) {
-        const nv = parser.attribList[i];
-        const name = nv[0];
-        const value = nv[1];
-        const qualName = qname(name, true);
-        const prefix = qualName.prefix;
-        const local = qualName.local;
-        const uri = prefix === "" ? "" : tag.ns[prefix] || "";
-        const a = {
-          name: name,
-          value: value,
-          prefix: prefix,
-          local: local,
-          uri: uri,
-        };
-
-        // if there's any attributes with an undefined namespace,
-        // then fail on them now.
-        if (prefix && prefix !== "xmlns" && !uri) {
-          strictFail(
-            parser,
-            "Unbound namespace prefix: " + JSON.stringify(prefix),
-          );
-          a.uri = prefix;
-        }
-        parser.tag.attributes[name] = a;
-        emitNode(parser, "onattribute", a);
-      }
-      parser.attribList.length = 0;
-    }
-
-    parser.tag.isSelfClosing = !!selfClosing;
-
-    // process the tag
-    parser.sawRoot = true;
-    parser.tags.push(parser.tag);
-    emitNode(parser, "onopentag", parser.tag);
-    if (!selfClosing) {
-      // special case for <script> in non-strict mode.
-      if (!parser.noscript && parser.tagName.toLowerCase() === "script") {
-        parser.state = S.SCRIPT;
-      } else {
-        parser.state = S.TEXT;
-      }
-      parser.tag = null;
-      parser.tagName = "";
-    }
-    parser.attribName = parser.attribValue = "";
-    parser.attribList.length = 0;
-  }
-
-  function parseEntity(parser) {
-    let entity = parser.entity;
-    const entityLC = entity.toLowerCase();
-    let num;
-    let numStr = "";
-
-    if (parser.ENTITIES[entity]) {
-      return parser.ENTITIES[entity];
-    }
-    if (parser.ENTITIES[entityLC]) {
-      return parser.ENTITIES[entityLC];
-    }
-    entity = entityLC;
-    if (entity.charAt(0) === "#") {
-      if (entity.charAt(1) === "x") {
-        entity = entity.slice(2);
-        num = parseInt(entity, 16);
-        numStr = num.toString(16);
-      } else {
-        entity = entity.slice(1);
-        num = parseInt(entity, 10);
-        numStr = num.toString(10);
-      }
-    }
-    entity = entity.replace(/^0+/, "");
-    if (
-      isNaN(num) ||
-      numStr.toLowerCase() !== entity ||
-      num < 0 ||
-      num > 0x10ffff
-    ) {
-      strictFail(parser, "Invalid character entity");
-      return "&" + parser.entity + ";";
-    }
-
-    return String.fromCodePoint(num);
   }
 
   function write(chunk) {
@@ -1021,6 +729,233 @@ const sax: unknown = {};
       checkBufferLength(parser, sax.MAX_BUFFER_LENGTH);
     }
     return parser;
+  }
+
+  // wrapper for non-node envs
+  sax.parser = function (strict, opt) {
+    return new SAXParser(strict, opt);
+  };
+
+  class SAXStream extends Stream {
+    constructor(strict, opt) {
+      super();
+
+      this._parser = new SAXParser(strict, opt);
+      this.writable = true;
+      this.readable = true;
+
+      this._parser.onend = () => {
+        this.emit("end");
+      };
+
+      this._parser.onerror = (er) => {
+        this.emit("error", er);
+
+        // if didn't throw, then means error was handled.
+        // go ahead and clear error, so we can write again.
+        this._parser.error = null;
+      };
+
+      this._decoder = null;
+      this._decoderBuffer = null;
+
+      // Set up dynamic getters/setters for stream wraps
+      streamWraps.forEach((ev) => {
+        Object.defineProperty(this, "on" + ev, {
+          get: () => this._parser["on" + ev],
+          set: (h) => {
+            if (!h) {
+              this.removeAllListeners(ev);
+              this._parser["on" + ev] = h;
+              return h;
+            }
+            this.on(ev, h);
+          },
+          enumerable: true,
+          configurable: false,
+        });
+      });
+    }
+
+    _decodeBuffer(data, isEnd) {
+      if (this._decoderBuffer) {
+        // Keep incomplete leading bytes until we have enough data to infer the
+        // stream encoding, then decode the buffered prefix together with the next chunk.
+        data = Buffer.concat([this._decoderBuffer, data]);
+        this._decoderBuffer = null;
+      }
+
+      if (!this._decoder) {
+        const encoding = determineBufferEncoding(data, isEnd);
+        if (!encoding) {
+          // A very short first chunk may not contain enough bytes to detect the
+          // encoding yet, so defer decoding until the next write/end call.
+          this._decoderBuffer = data;
+          return "";
+        }
+
+        // Store the detected transport encoding so strict mode can compare it
+        // with the optional encoding declared in the XML prolog later on.
+        this._parser.encoding = encoding;
+        this._decoder = new TextDecoder(encoding);
+      }
+
+      return this._decoder.decode(data, { stream: !isEnd });
+    }
+
+    write(data) {
+      if (
+        typeof Buffer === "function" &&
+        typeof Buffer.isBuffer === "function" &&
+        Buffer.isBuffer(data)
+      ) {
+        data = this._decodeBuffer(data, false);
+      } else if (this._decoderBuffer) {
+        // Flush any buffered binary prefix before handling a string chunk.
+        // This only matters if the caller mixes Buffer and string writes (used in test).
+        const remaining = this._decodeBuffer(Buffer.alloc(0), true);
+        if (remaining) {
+          this._parser.write(remaining);
+          this.emit("data", remaining);
+        }
+      }
+
+      this._parser.write(data.toString());
+      this.emit("data", data);
+      return true;
+    }
+
+    end(chunk) {
+      if (chunk && chunk.length) {
+        this.write(chunk);
+      }
+      // Flush any remaining decoded data from the TextDecoder
+      if (this._decoderBuffer) {
+        const finalChunk = this._decodeBuffer(Buffer.alloc(0), true);
+        if (finalChunk) {
+          this._parser.write(finalChunk);
+          this.emit("data", finalChunk);
+        }
+      } else if (this._decoder) {
+        const remaining = this._decoder.decode();
+        if (remaining) {
+          this._parser.write(remaining);
+          this.emit("data", remaining);
+        }
+      }
+      this._parser.end();
+      return true;
+    }
+
+    on(ev, handler) {
+      if (!this._parser["on" + ev] && streamWraps.indexOf(ev) !== -1) {
+        this._parser["on" + ev] = (...args) => {
+          this.emit(ev, ...args);
+        };
+      }
+
+      return super.on(ev, handler);
+    }
+  }
+
+  function createStream(strict, opt) {
+    return new SAXStream(strict, opt);
+  }
+
+  sax.SAXParser = SAXParser;
+  sax.SAXStream = SAXStream;
+  sax.createStream = createStream;
+
+  Object.keys(sax.ENTITIES).forEach(function (key) {
+    const e = sax.ENTITIES[key];
+    const s = typeof e === "number" ? String.fromCharCode(e) : e;
+    sax.ENTITIES[key] = s;
+  });
+
+  // shorthand
+  const S = sax.STATE;
+
+  function openTag(parser, selfClosing?) {
+    if (parser.opt.xmlns) {
+      // emit namespace binding events
+      const tag = parser.tag;
+
+      // add namespace info to tag
+      const qn = qname(parser.tagName);
+      tag.prefix = qn.prefix;
+      tag.local = qn.local;
+      tag.uri = tag.ns[qn.prefix] || "";
+
+      if (tag.prefix && !tag.uri) {
+        strictFail(
+          parser,
+          "Unbound namespace prefix: " + JSON.stringify(parser.tagName),
+        );
+        tag.uri = qn.prefix;
+      }
+
+      const parent = parser.tags[parser.tags.length - 1] || parser;
+      if (tag.ns && parent.ns !== tag.ns) {
+        Object.keys(tag.ns).forEach(function (p) {
+          emitNode(parser, "onopennamespace", {
+            prefix: p,
+            uri: tag.ns[p],
+          });
+        });
+      }
+
+      // handle deferred onattribute events
+      // Note: do not apply default ns to attributes:
+      //   http://www.w3.org/TR/REC-xml-names/#defaulting
+      for (let i = 0, l = parser.attribList.length; i < l; i++) {
+        const nv = parser.attribList[i];
+        const name = nv[0];
+        const value = nv[1];
+        const qualName = qname(name, true);
+        const prefix = qualName.prefix;
+        const local = qualName.local;
+        const uri = prefix === "" ? "" : tag.ns[prefix] || "";
+        const a = {
+          name: name,
+          value: value,
+          prefix: prefix,
+          local: local,
+          uri: uri,
+        };
+
+        // if there's any attributes with an undefined namespace,
+        // then fail on them now.
+        if (prefix && prefix !== "xmlns" && !uri) {
+          strictFail(
+            parser,
+            "Unbound namespace prefix: " + JSON.stringify(prefix),
+          );
+          a.uri = prefix;
+        }
+        parser.tag.attributes[name] = a;
+        emitNode(parser, "onattribute", a);
+      }
+      parser.attribList.length = 0;
+    }
+
+    parser.tag.isSelfClosing = !!selfClosing;
+
+    // process the tag
+    parser.sawRoot = true;
+    parser.tags.push(parser.tag);
+    emitNode(parser, "onopentag", parser.tag);
+    if (!selfClosing) {
+      // special case for <script> in non-strict mode.
+      if (!parser.noscript && parser.tagName.toLowerCase() === "script") {
+        parser.state = S.SCRIPT;
+      } else {
+        parser.state = S.TEXT;
+      }
+      parser.tag = null;
+      parser.tagName = "";
+    }
+    parser.attribName = parser.attribValue = "";
+    parser.attribList.length = 0;
   }
 })(sax);
 
