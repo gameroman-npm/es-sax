@@ -1,12 +1,11 @@
-import { test } from "./index.ts";
+import { test } from "node:test";
+import assert from "node:assert";
+import sax from "es-sax";
 
 /**
  * @fileoverview
- *   See: https://en.wikipedia.org/wiki/Billion_laughs_attack
+ * See: https://en.wikipedia.org/wiki/Billion_laughs_attack
  */
-
-var t = require("tap");
-import sax from "es-sax";
 
 var ENTITIES = {
   lol: "lolz",
@@ -25,20 +24,18 @@ var BODY =
   '<?xml version="1.0"?><!DOCTYPE lolz [<!ELEMENT lolz (#PCDATA)>]><lolz>&lol9;</lolz>';
 
 for (var strictMode of [true, false]) {
-  t.test(
-    "should not throw on billion laughs with unparsed entities disabled",
-    (t) => {
-      var parser = sax.parser(strictMode);
-      parser.ENTITIES = { ...parser.ENTITIES, ...ENTITIES };
+  const modeLabel = strictMode ? "[Strict]" : "[Loose]";
 
-      t.doesNotThrow(() => {
-        parser.write(BODY).close();
-      });
-      t.end();
-    },
-  );
+  test(`${modeLabel} should not throw on billion laughs with unparsed entities disabled`, () => {
+    var parser = sax.parser(strictMode);
+    parser.ENTITIES = { ...parser.ENTITIES, ...ENTITIES };
 
-  t.test("should count number of entities including nested entities", (t) => {
+    assert.doesNotThrow(() => {
+      parser.write(BODY).close();
+    });
+  });
+
+  test(`${modeLabel} should count number of entities including nested entities`, () => {
     var parser = sax.parser(strictMode, {
       unparsedEntities: true,
     });
@@ -48,18 +45,17 @@ for (var strictMode of [true, false]) {
       '<?xml version="1.0"?><!DOCTYPE lolz [<!ELEMENT lolz (#PCDATA)>]><lolz>&lol2;</lolz>',
     );
 
-    t.equal(parser.entityCount, 111);
+    assert.strictEqual(parser.entityCount, 111);
     parser.close();
-    t.end();
   });
 
-  t.test("should count depth of entities correctly", (t) => {
+  test(`${modeLabel} should count depth of entities correctly`, () => {
     var parser = sax.parser(strictMode, {
       unparsedEntities: true,
       maxEntityDepth: 3,
     });
 
-    t.doesNotThrow(() => {
+    assert.doesNotThrow(() => {
       parser.ENTITIES = { ...parser.ENTITIES, ...ENTITIES };
       parser
         .write(
@@ -68,7 +64,7 @@ for (var strictMode of [true, false]) {
         .close();
     });
 
-    t.throws(
+    assert.throws(
       () => {
         parser.ENTITIES = { ...parser.ENTITIES, ...ENTITIES };
         parser.write(
@@ -76,46 +72,42 @@ for (var strictMode of [true, false]) {
         );
       },
       {
-        message: "Parsed entity depth exceeds max entity depth",
+        message: /^Parsed entity depth exceeds max entity depth/,
       },
     );
-
-    t.end();
   });
 
-  t.test("should throw on billion laughs with only entity count check", (t) => {
+  test(`${modeLabel} should throw on billion laughs with only entity count check`, () => {
     var parser = sax.parser(strictMode, {
       unparsedEntities: true,
       maxEntityDepth: Number.MAX_SAFE_INTEGER,
     });
     parser.ENTITIES = { ...parser.ENTITIES, ...ENTITIES };
 
-    t.throws(
+    assert.throws(
       () => {
         parser.write(BODY);
       },
       {
-        message: "Parsed entity count exceeds max entity count",
+        message: /^Parsed entity count exceeds max entity count/,
       },
     );
-    t.end();
   });
 
-  t.test("should throw on billion laughs with only entity depth check", (t) => {
+  test(`${modeLabel} should throw on billion laughs with only entity depth check`, () => {
     var parser = sax.parser(strictMode, {
       unparsedEntities: true,
       maxEntityCount: Number.MAX_SAFE_INTEGER,
     });
     parser.ENTITIES = { ...parser.ENTITIES, ...ENTITIES };
 
-    t.throws(
+    assert.throws(
       () => {
         parser.write(BODY);
       },
       {
-        message: "Parsed entity depth exceeds max entity depth",
+        message: /^Parsed entity depth exceeds max entity depth/,
       },
     );
-    t.end();
   });
 }
