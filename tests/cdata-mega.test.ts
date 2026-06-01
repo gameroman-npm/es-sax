@@ -4,7 +4,6 @@ var process = require("process");
 var t = require("tap");
 import sax from "es-sax";
 
-
 t.test("cdata-mega", (t) => {
   var bytesInMiB = 1024 * 1024;
   var cdataSize = 1 * bytesInMiB;

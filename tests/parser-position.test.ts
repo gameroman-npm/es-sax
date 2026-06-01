@@ -1,6 +1,6 @@
-import { test } from "./index.ts";
-
 import sax from "es-sax";
+
+import { test } from "./index.ts";
 
 var tap = require("tap");
 

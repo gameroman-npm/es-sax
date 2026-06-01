@@ -8,7 +8,6 @@ import { test } from "./index.ts";
 var t = require("tap");
 import sax from "es-sax";
 
-
 var ENTITIES = {
   lol: "lolz",
   lol1: "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;",

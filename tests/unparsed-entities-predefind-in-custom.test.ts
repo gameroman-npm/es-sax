@@ -1,6 +1,6 @@
-import { test } from "./index.ts";
-
 import sax from "es-sax";
+
+import { test } from "./index.ts";
 
 sax.ENTITIES.entity_reference = "<text>entity reference</text>";
 sax.ENTITIES.escaped_entity_reference =
