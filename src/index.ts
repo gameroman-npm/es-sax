@@ -281,7 +281,7 @@ const sax: unknown = {};
   let Stream;
   try {
     Stream = require("node:stream").Stream;
-  } catch (ex) {
+  } catch {
     Stream = function () {};
   }
   if (!Stream) Stream = function () {};
