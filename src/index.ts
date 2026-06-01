@@ -49,6 +49,14 @@ function determineBufferEncoding(
   return isEnd ? "utf8" : null;
 }
 
+function normalizeEncodingName(encoding?: string): string | null {
+  if (!encoding) {
+    return null;
+  }
+
+  return encoding.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 function textopts(
   opt: { trim: boolean; normalize: boolean },
   text: string,
@@ -56,6 +64,21 @@ function textopts(
   if (opt.trim) text = text.trim();
   if (opt.normalize) text = text.replace(/\s+/g, " ");
   return text;
+}
+
+function qname(name: string, attribute?: true) {
+  const i = name.indexOf(":");
+  const qualName = i < 0 ? ["", name] : name.split(":");
+  let prefix = qualName[0];
+  let local = qualName[1];
+
+  // <x "xmlns"="http://foo">
+  if (attribute && name === "xmlns") {
+    prefix = "xmlns";
+    local = "";
+  }
+
+  return { prefix, local };
 }
 
 function isWhitespace(c: string) {
@@ -91,7 +114,7 @@ function charAt(chunk: string, i: number): string {
   return result;
 }
 
-function emit(parser, event, data): void {
+function emit(parser, event, data?): void {
   parser[event]?.(data);
 }
 
@@ -99,6 +122,41 @@ function closeText(parser): void {
   parser.textNode = textopts(parser.opt, parser.textNode);
   if (parser.textNode) emit(parser, "ontext", parser.textNode);
   parser.textNode = "";
+}
+
+function emitNode(parser, nodeType, data?): void {
+  if (parser.textNode) closeText(parser);
+  emit(parser, nodeType, data);
+}
+
+function newTag(parser) {
+  if (!parser.strict) parser.tagName = parser.tagName[parser.looseCase]();
+  const parent = parser.tags[parser.tags.length - 1] || parser;
+  const tag = (parser.tag = { name: parser.tagName, attributes: {} });
+
+  // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
+  if (parser.opt.xmlns) {
+    tag.ns = parent.ns;
+  }
+  parser.attribList.length = 0;
+  emitNode(parser, "onopentagstart", tag);
+}
+
+function error(parser, er) {
+  closeText(parser);
+  if (parser.trackPosition) {
+    er +=
+      "\nLine: " +
+      parser.line +
+      "\nColumn: " +
+      parser.column +
+      "\nChar: " +
+      parser.c;
+  }
+  er = new Error(er);
+  parser.error = er;
+  emit(parser, "onerror", er);
+  return parser;
 }
 
 // this really needs to be replaced with character classes.
@@ -792,14 +850,6 @@ const sax: unknown = {};
   // shorthand
   S = sax.STATE;
 
-  function normalizeEncodingName(encoding) {
-    if (!encoding) {
-      return null;
-    }
-
-    return encoding.toLowerCase().replace(/[^a-z0-9]/g, "");
-  }
-
   function encodingsMatch(detectedEncoding, declaredEncoding) {
     const detected = normalizeEncodingName(detectedEncoding);
     const declared = normalizeEncodingName(declaredEncoding);
@@ -835,28 +885,6 @@ const sax: unknown = {};
     }
   }
 
-  function emitNode(parser, nodeType, data) {
-    if (parser.textNode) closeText(parser);
-    emit(parser, nodeType, data);
-  }
-
-  function error(parser, er) {
-    closeText(parser);
-    if (parser.trackPosition) {
-      er +=
-        "\nLine: " +
-        parser.line +
-        "\nColumn: " +
-        parser.column +
-        "\nChar: " +
-        parser.c;
-    }
-    er = new Error(er);
-    parser.error = er;
-    emit(parser, "onerror", er);
-    return parser;
-  }
-
   function end(parser) {
     if (parser.sawRoot && !parser.closedRoot)
       strictFail(parser, "Unclosed root tag");
@@ -882,34 +910,6 @@ const sax: unknown = {};
     if (parser.strict) {
       error(parser, message);
     }
-  }
-
-  function newTag(parser) {
-    if (!parser.strict) parser.tagName = parser.tagName[parser.looseCase]();
-    const parent = parser.tags[parser.tags.length - 1] || parser;
-    const tag = (parser.tag = { name: parser.tagName, attributes: {} });
-
-    // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
-    if (parser.opt.xmlns) {
-      tag.ns = parent.ns;
-    }
-    parser.attribList.length = 0;
-    emitNode(parser, "onopentagstart", tag);
-  }
-
-  function qname(name, attribute) {
-    const i = name.indexOf(":");
-    const qualName = i < 0 ? ["", name] : name.split(":");
-    let prefix = qualName[0];
-    let local = qualName[1];
-
-    // <x "xmlns"="http://foo">
-    if (attribute && name === "xmlns") {
-      prefix = "xmlns";
-      local = "";
-    }
-
-    return { prefix: prefix, local: local };
   }
 
   function attrib(parser) {
@@ -979,7 +979,7 @@ const sax: unknown = {};
     parser.attribName = parser.attribValue = "";
   }
 
-  function openTag(parser, selfClosing) {
+  function openTag(parser, selfClosing?) {
     if (parser.opt.xmlns) {
       // emit namespace binding events
       const tag = parser.tag;
