@@ -5,7 +5,7 @@ import sax from "es-sax";
 
 const saxStream = sax.createStream();
 
-test.skip("stream should end without throwing an error", function () {
+test("stream should end without throwing an error", function () {
   assert.doesNotThrow(function () {
     saxStream.end();
   });

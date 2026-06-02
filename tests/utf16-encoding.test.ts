@@ -1,10 +1,19 @@
+import assert from "node:assert";
 import { test } from "node:test";
 
 import sax from "es-sax";
 
-test.skip("parses utf-16 xml streams when the declaration says UTF-16", (t) => {
+test("parses utf-16 xml streams when the declaration says UTF-16", async () => {
   const stream = sax.createStream(true);
-  const result = {
+  const result: {
+    processinginstruction: null | { name: string; body: string };
+    opentagstart: null;
+    opentag: null;
+    text: string;
+    closetag: null | string;
+    error: null | string;
+    errorCount: number;
+  } = {
     processinginstruction: null,
     opentagstart: null,
     opentag: null,
@@ -47,30 +56,33 @@ test.skip("parses utf-16 xml streams when the declaration says UTF-16", (t) => {
     result.errorCount += 1;
   });
 
-  stream.on("end", function () {
-    t.same(result, {
-      processinginstruction: {
-        name: "xml",
-        body: 'version="1.0" encoding="UTF-16"',
-      },
-      opentagstart: { name: "person", attributes: {}, isSelfClosing: false },
-      opentag: { name: "person", attributes: {}, isSelfClosing: false },
-      text: "\nHi Jérôme",
-      closetag: "person",
-      error: null,
-      errorCount: 0,
+  // Wrap the assertion inside a Promise that resolves when the stream ends
+  await new Promise<void>((resolve) => {
+    stream.on("end", function () {
+      assert.deepStrictEqual(result, {
+        processinginstruction: {
+          name: "xml",
+          body: 'version="1.0" encoding="UTF-16"',
+        },
+        opentagstart: { name: "person", attributes: {}, isSelfClosing: false },
+        opentag: { name: "person", attributes: {}, isSelfClosing: false },
+        text: "\nHi Jérôme",
+        closetag: "person",
+        error: null,
+        errorCount: 0,
+      });
+      resolve();
     });
-    t.end();
-  });
 
-  stream.write(utf16.slice(0, 7));
-  stream.write(utf16.slice(7, 34));
-  stream.end(utf16.slice(34));
+    stream.write(utf16.slice(0, 7));
+    stream.write(utf16.slice(7, 34));
+    stream.end(utf16.slice(34));
+  });
 });
 
-test.skip("fails in strict mode when declared encoding conflicts with detected utf-16", (t) => {
+test("fails in strict mode when declared encoding conflicts with detected utf-16", async () => {
   const stream = sax.createStream(true);
-  let error = null;
+  let error: string | null = null;
   const xml =
     '<?xml version="1.0" encoding="UTF-8"?>\n<person>Hi Jérôme</person>';
   const utf16 = Buffer.concat([
@@ -84,21 +96,23 @@ test.skip("fails in strict mode when declared encoding conflicts with detected u
     }
   });
 
-  stream.on("end", function () {
-    t.equal(
-      error,
-      "XML declaration encoding UTF-8 does not match detected stream encoding UTF-16LE\nLine: 0\nColumn: 38\nChar: >",
-    );
-    t.end();
-  });
+  await new Promise<void>((resolve) => {
+    stream.on("end", function () {
+      assert.strictEqual(
+        error,
+        "XML declaration encoding UTF-8 does not match detected stream encoding UTF-16LE\nLine: 0\nColumn: 38\nChar: >",
+      );
+      resolve();
+    });
 
-  stream.write(utf16.slice(0, 9));
-  stream.end(utf16.slice(9));
+    stream.write(utf16.slice(0, 9));
+    stream.end(utf16.slice(9));
+  });
 });
 
-test.skip("does not fail in non-strict mode when declared encoding conflicts with detected utf-16", (t) => {
+test("does not fail in non-strict mode when declared encoding conflicts with detected utf-16", async () => {
   const stream = sax.createStream(false);
-  const result = {
+  const result: { text: string; error: null | string } = {
     text: "",
     error: null,
   };
@@ -119,14 +133,16 @@ test.skip("does not fail in non-strict mode when declared encoding conflicts wit
     }
   });
 
-  stream.on("end", function () {
-    t.same(result, {
-      text: "\nHi Jérôme",
-      error: null,
+  await new Promise<void>((resolve) => {
+    stream.on("end", function () {
+      assert.deepStrictEqual(result, {
+        text: "\nHi Jérôme",
+        error: null,
+      });
+      resolve();
     });
-    t.end();
-  });
 
-  stream.write(utf16.slice(0, 9));
-  stream.end(utf16.slice(9));
+    stream.write(utf16.slice(0, 9));
+    stream.end(utf16.slice(9));
+  });
 });

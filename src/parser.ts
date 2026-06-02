@@ -10,6 +10,7 @@ import {
 } from "./constants";
 import sax from "./sax";
 import { STATE } from "./state";
+import type { SAXOptions } from "./types";
 import { encodingsMatch, getDeclaredEncoding, qname } from "./util";
 import {
   charAt,
@@ -49,7 +50,7 @@ function newTag(parser: SAXParser): void {
   emitNode(parser, "onopentagstart", tag);
 }
 
-function error(parser: SAXParser, er) {
+function error<T extends SAXParser>(parser: T, er): T {
   closeText(parser);
   if (parser.trackPosition) {
     er +=
@@ -416,12 +417,17 @@ function openTag(parser: SAXParser, selfClosing?: true): void {
 const S = STATE;
 
 class SAXParser {
-  constructor(strict?: boolean, opt?) {
+  declare strict: boolean;
+  declare opt: SAXOptions;
+  declare error: Error | null;
+
+  constructor(strict?: boolean, opt?: SAXOptions) {
     this.#init(strict, opt);
   }
 
-  #init(strict?: boolean, opt?): void {
+  #init(strict?: boolean, opt?: SAXOptions): void {
     clearBuffers(this);
+
     this.q = this.c = "";
     this.bufferCheckPosition = sax.MAX_BUFFER_LENGTH;
     this.encoding = null;
@@ -478,7 +484,7 @@ class SAXParser {
     return this;
   }
 
-  write(chunk) {
+  write(chunk: string | null): this {
     if (this.error) {
       throw this.error;
     }
@@ -1075,7 +1081,7 @@ class SAXParser {
     return this;
   }
 
-  close(): void {
+  close(): this {
     return this.write(null);
   }
 

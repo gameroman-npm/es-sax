@@ -303,7 +303,7 @@ const ENTITIES = {
   clubs: 9827,
   hearts: 9829,
   diams: 9830,
-} as const;
+} as unknown as Record<string, string>;
 
 const EVENTS = [
   "text",

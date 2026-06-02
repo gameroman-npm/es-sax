@@ -1,7 +1,32 @@
 import { ENTITIES, EVENTS, XML_ENTITIES } from "./constants";
+import { SAXParser } from "./parser";
 import { STATE } from "./state";
+import { SAXStream } from "./stream";
+import type { SAXOptions } from "./types";
 
-const sax: unknown = {
+interface Sax {
+  MAX_BUFFER_LENGTH: number;
+  ENTITIES: Record<string, string>;
+  EVENTS: typeof EVENTS;
+  XML_ENTITIES: typeof XML_ENTITIES;
+  STATE: typeof STATE;
+
+  parser(strict?: boolean, opt?: SAXOptions): SAXParser;
+  createStream(strict?: boolean, opt?: SAXOptions): SAXStream;
+
+  SAXParser: typeof SAXParser;
+  SAXStream: typeof SAXStream;
+}
+
+function parser(strict?: boolean, opt?: SAXOptions): SAXParser {
+  return new SAXParser(strict, opt);
+}
+
+function createStream(strict?: boolean, opt?: SAXOptions): SAXStream {
+  return new SAXStream(strict, opt);
+}
+
+const sax: Sax = {
   /**
    * When we pass the `MAX_BUFFER_LENGTH` position, start checking for buffer overruns.
    * When we check, schedule the next check for `MAX_BUFFER_LENGTH - (max(buffer lengths))`,
@@ -22,6 +47,21 @@ const sax: unknown = {
   XML_ENTITIES,
 
   STATE,
+
+  parser,
+
+  createStream,
+
+  SAXParser,
+
+  SAXStream,
 };
 
+Object.keys(sax.ENTITIES).forEach(function (key: keyof typeof sax.ENTITIES) {
+  const e = sax.ENTITIES[key]!;
+  const s = typeof e === "number" ? String.fromCharCode(e) : e;
+  sax.ENTITIES[key] = s;
+});
+
+export { createStream, parser };
 export default sax;

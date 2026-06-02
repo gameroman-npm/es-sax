@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import sax from "es-sax";
 
-test.skip(() => {
+test(() => {
   const saxStream = sax.createStream();
 
   const b = Buffer.from("误");
@@ -25,8 +25,10 @@ test.skip(() => {
   saxStream.end(Buffer.concat([b.slice(1), Buffer.from("</d></test>")]));
 });
 
-test.skip(() => {
+test(() => {
   const saxStream2 = sax.createStream();
+
+  const b = Buffer.from("误");
 
   saxStream2.on("text", function (text) {
     assert.strictEqual(text, "\uFFFD");
