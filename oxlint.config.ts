@@ -5,7 +5,6 @@ export default defineConfig({
     "no-floating-promises": "warn",
     "no-unnecessary-condition": "warn",
     "no-this-alias": "warn",
-    "no-var": "warn",
   },
   options: {
     typeCheck: false,

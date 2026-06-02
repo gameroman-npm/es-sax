@@ -43,7 +43,7 @@ myAttributes["test"] = "&";
 
 let entI = 0;
 
-for (var entity in entitiesToTest) {
+for (const entity in entitiesToTest) {
   const attribName = "test" + entI;
   const attribValue = "Testing " + entity;
 
@@ -88,7 +88,7 @@ const parser = test({
   expect: iExpect,
 });
 
-for (entity in entitiesToTest) {
+for (const entity in entitiesToTest) {
   parser.ENTITIES[entity] = ENTITIES[entity];
 }
 

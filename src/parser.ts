@@ -535,7 +535,7 @@ class SAXParser {
 
         case S.TEXT:
           if (this.sawRoot && !this.closedRoot) {
-            var starti = i - 1;
+            const starti = i - 1;
             while (c && c !== "<" && c !== "&") {
               c = charAt(chunk, i++);
               if (c && this.trackPosition) {
@@ -735,7 +735,7 @@ class SAXParser {
           continue;
 
         case S.CDATA:
-          var starti = i - 1;
+          const starti = i - 1;
           while (c && c !== "]") {
             c = charAt(chunk, i++);
             if (c && this.trackPosition) {
