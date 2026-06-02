@@ -1,7 +1,6 @@
 MIT License
 
 Copyright (c) 2026 Roman A
-Copyright (c) 2010-2026 isaacs (https://github.com/isaacs/sax-js/blob/be26f5488fb832c25347296c4a2b59fd53f8ee13/LICENSE.md)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -20,3 +19,15 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+ATTRIBUTION & NOTICES FOR UPSTREAM CODE:
+
+This project is a fork of sax-js. Portions of this software are 
+Copyright (c) 2010-2026 isaacs, and are used under the terms of the 
+Blue Oak Model License 1.0.0. 
+
+In accordance with the Blue Oak Model License Notices requirement, 
+the original license text can be found at the following link:
+https://blueoakcouncil.org/license/1.0.0
