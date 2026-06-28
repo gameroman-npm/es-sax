@@ -5,7 +5,7 @@ import { test } from "./index.ts";
 let xml = "<r>";
 let text = "";
 for (const i in sax.ENTITIES) {
-  xml += "&" + i + ";";
+  xml += `&${i};`;
   text += sax.ENTITIES[i];
 }
 xml += "</r>";

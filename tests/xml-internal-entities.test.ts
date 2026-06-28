@@ -44,32 +44,28 @@ myAttributes["test"] = "&";
 let entI = 0;
 
 for (const entity in entitiesToTest) {
-  const attribName = "test" + entI;
-  const attribValue = "Testing " + entity;
+  const attribName = `test${entI}`;
+  const attribValue = `Testing ${entity}`;
 
   // add the first part to use in calculation below
-  xmlStart += attribName + '="' + "&";
+  xmlStart += `${attribName}="` + `&`;
 
   if (typeof entitiesToTest[entity] === "object") {
     iExpect.push([
       "error",
-      "Invalid character in entity name\nLine: 0\nColumn: " +
-        (xmlStart.length + entitiesToTest[entity][0] + 1) +
-        "\nChar: " +
-        entitiesToTest[entity][1],
+      `Invalid character in entity name\nLine: 0\nColumn: ${
+        xmlStart.length + entitiesToTest[entity][0] + 1
+      }\nChar: ${entitiesToTest[entity][1]}`,
     ]);
-    iExpect.push([
-      "attribute",
-      { name: attribName, value: "&" + entity + ";" },
-    ]);
-    myAttributes[attribName] = "&" + entity + ";";
+    iExpect.push(["attribute", { name: attribName, value: `&${entity};` }]);
+    myAttributes[attribName] = `&${entity};`;
   } else {
     ENTITIES[entity] = attribValue;
     iExpect.push(["attribute", { name: attribName, value: attribValue }]);
     myAttributes[attribName] = attribValue;
   }
 
-  xmlStart += entity + ';" ';
+  xmlStart += `${entity};" `;
   entI++;
 }
 

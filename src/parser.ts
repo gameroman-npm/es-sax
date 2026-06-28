@@ -50,16 +50,10 @@ function newTag(parser: SAXParser): void {
   emitNode(parser, "onopentagstart", tag);
 }
 
-function error<T extends SAXParser>(parser: T, er): T {
+function error<T extends SAXParser>(parser: T, er: string): T {
   closeText(parser);
   if (parser.trackPosition) {
-    er +=
-      "\nLine: " +
-      parser.line +
-      "\nColumn: " +
-      parser.column +
-      "\nChar: " +
-      parser.c;
+    er += `\nLine: ${parser.line}\nColumn: ${parser.column}\nChar: ${parser.c}`;
   }
   er = new Error(er);
   parser.error = er;
@@ -111,7 +105,7 @@ function checkBufferLength(parser: SAXParser, MAX_BUFFER_LENGTH: number): void {
           break;
 
         default:
-          error(parser, "Max buffer length exceeded: " + buffers[i]);
+          error(parser, `Max buffer length exceeded: ${buffers[i]}`);
       }
     }
     maxActual = Math.max(maxActual, len);
@@ -137,10 +131,9 @@ function validateXmlDeclarationEncoding(parser: SAXParser, data): void {
   if (declaredEncoding && !encodingsMatch(parser.encoding, declaredEncoding)) {
     strictFail(
       parser,
-      "XML declaration encoding " +
-        declaredEncoding +
-        " does not match detected stream encoding " +
-        parser.encoding.toUpperCase(),
+      `XML declaration encoding ${
+        declaredEncoding
+      } does not match detected stream encoding ${parser.encoding.toUpperCase()}`,
     );
   }
 }
@@ -181,20 +174,14 @@ function attrib(parser: SAXParser): void {
       if (local === "xml" && parser.attribValue !== XML_NAMESPACE) {
         strictFail(
           parser,
-          "xml: prefix must be bound to " +
-            XML_NAMESPACE +
-            "\n" +
-            "Actual: " +
-            parser.attribValue,
+          `xml: prefix must be bound to ${XML_NAMESPACE}\n` +
+            `Actual: ${parser.attribValue}`,
         );
       } else if (local === "xmlns" && parser.attribValue !== XMLNS_NAMESPACE) {
         strictFail(
           parser,
-          "xmlns: prefix must be bound to " +
-            XMLNS_NAMESPACE +
-            "\n" +
-            "Actual: " +
-            parser.attribValue,
+          `xmlns: prefix must be bound to ${XMLNS_NAMESPACE}\n` +
+            `Actual: ${parser.attribValue}`,
         );
       } else {
         const tag = parser.tag;
@@ -232,7 +219,7 @@ function closeTag(parser: SAXParser): void {
 
   if (parser.script) {
     if (parser.tagName !== "script") {
-      parser.script += "</" + parser.tagName + ">";
+      parser.script += `</${parser.tagName}>`;
       parser.tagName = "";
       parser.state = STATE.SCRIPT;
       return;
@@ -261,8 +248,8 @@ function closeTag(parser: SAXParser): void {
 
   // didn't find it.  we already failed for strict, so just abort.
   if (t < 0) {
-    strictFail(parser, "Unmatched closing tag: " + parser.tagName);
-    parser.textNode += "</" + parser.tagName + ">";
+    strictFail(parser, `Unmatched closing tag: ${parser.tagName}`);
+    parser.textNode += `</${parser.tagName}>`;
     parser.state = STATE.TEXT;
     return;
   }
@@ -325,7 +312,7 @@ function parseEntity(parser: SAXParser): string {
     num > 0x10ffff
   ) {
     strictFail(parser, "Invalid character entity");
-    return "&" + parser.entity + ";";
+    return `&${parser.entity};`;
   }
 
   return String.fromCodePoint(num);
@@ -345,7 +332,7 @@ function openTag(parser: SAXParser, selfClosing?: true): void {
     if (tag.prefix && !tag.uri) {
       strictFail(
         parser,
-        "Unbound namespace prefix: " + JSON.stringify(parser.tagName),
+        `Unbound namespace prefix: ${JSON.stringify(parser.tagName)}`,
       );
       tag.uri = qn.prefix;
     }
@@ -384,7 +371,7 @@ function openTag(parser: SAXParser, selfClosing?: true): void {
       if (prefix && prefix !== "xmlns" && !uri) {
         strictFail(
           parser,
-          "Unbound namespace prefix: " + JSON.stringify(prefix),
+          `Unbound namespace prefix: ${JSON.stringify(prefix)}`,
         );
         a.uri = prefix;
       }
@@ -420,6 +407,10 @@ class SAXParser {
   declare strict: boolean;
   declare opt: SAXOptions;
   declare error: Error | null;
+  declare trackPosition: boolean;
+  declare state: number;
+  declare tagName?: string;
+  declare cdata?: string;
 
   constructor(strict?: boolean, opt?: SAXOptions) {
     this.#init(strict, opt);
@@ -577,7 +568,7 @@ class SAXParser {
           if (c === "/") {
             this.state = S.CLOSE_TAG;
           } else {
-            this.script += "<" + c;
+            this.script += `<${c}`;
             this.state = S.SCRIPT;
           }
           continue;
@@ -603,7 +594,7 @@ class SAXParser {
               const pad = this.position - this.startTagPosition;
               c = new Array(pad).join(" ") + c;
             }
-            this.textNode += "<" + c;
+            this.textNode += `<${c}`;
             this.state = S.TEXT;
           }
           continue;
@@ -618,7 +609,7 @@ class SAXParser {
 
           if (this.doctype && this.doctype !== true && this.sgmlDecl) {
             this.state = S.DOCTYPE_DTD;
-            this.doctype += "<!" + this.sgmlDecl + c;
+            this.doctype += `<!${this.sgmlDecl}${c}`;
             this.sgmlDecl = "";
           } else if ((this.sgmlDecl + c).toUpperCase() === CDATA) {
             emitNode(this, "onopencdata");
@@ -717,7 +708,7 @@ class SAXParser {
             }
             this.comment = "";
           } else {
-            this.comment += "-" + c;
+            this.comment += `-${c}`;
             this.state = S.COMMENT;
           }
           continue;
@@ -725,7 +716,7 @@ class SAXParser {
         case S.COMMENT_ENDED:
           if (c !== ">") {
             strictFail(this, "Malformed comment");
-            this.comment += "--" + c;
+            this.comment += `--${c}`;
             this.state = S.COMMENT;
           } else if (this.doctype && this.doctype !== true) {
             this.state = S.DOCTYPE_DTD;
@@ -758,7 +749,7 @@ class SAXParser {
           if (c === "]") {
             this.state = S.CDATA_ENDING_2;
           } else {
-            this.cdata += "]" + c;
+            this.cdata += `]${c}`;
             this.state = S.CDATA;
           }
           continue;
@@ -774,7 +765,7 @@ class SAXParser {
           } else if (c === "]") {
             this.cdata += "]";
           } else {
-            this.cdata += "]]" + c;
+            this.cdata += `]]${c}`;
             this.state = S.CDATA;
           }
           continue;
@@ -810,7 +801,7 @@ class SAXParser {
             this.procInstName = this.procInstBody = "";
             this.state = S.TEXT;
           } else {
-            this.procInstBody += "?" + c;
+            this.procInstBody += `?${c}`;
             this.state = S.PROC_INST_BODY;
           }
           continue;
@@ -900,7 +891,7 @@ class SAXParser {
               this.state = S.ATTRIB;
             }
           }
-          this.continue;
+          continue;
 
         case S.ATTRIB_VALUE:
           if (isWhitespace(c)) {
@@ -971,7 +962,7 @@ class SAXParser {
               continue;
             } else if (notMatch(nameStart, c)) {
               if (this.script) {
-                this.script += "</" + c;
+                this.script += `</${c}`;
                 this.state = S.SCRIPT;
               } else {
                 strictFail(this, "Invalid tagname in closing tag.");
@@ -984,7 +975,7 @@ class SAXParser {
           } else if (isMatch(nameBody, c)) {
             this.tagName += c;
           } else if (this.script) {
-            this.script += "</" + this.tagName + c;
+            this.script += `</${this.tagName}${c}`;
             this.tagName = "";
             this.state = S.SCRIPT;
           } else {
@@ -1057,18 +1048,18 @@ class SAXParser {
             this.entity += c;
           } else {
             strictFail(this, "Invalid character in entity name");
-            this[buffer] += "&" + this.entity + c;
+            this[buffer] += `&${this.entity}${c}`;
             this.entity = "";
             this.state = returnState;
           }
 
           continue;
 
-        default: /* istanbul ignore next */ {
-          throw new Error(this, "Unknown state: " + this.state);
+        default: {
+          throw new Error(this, `Unknown state: ${this.state}`);
         }
       }
-    } // while
+    }
 
     if (this.position >= this.bufferCheckPosition) {
       checkBufferLength(this, sax.MAX_BUFFER_LENGTH);

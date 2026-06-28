@@ -2,7 +2,7 @@ import type { Stream as NodeStream, Readable } from "node:stream";
 
 import { EVENTS } from "./constants";
 import { SAXParser } from "./parser";
-import type { SAXOptions } from "./types";
+import type { QualifiedTag, SAXOptions, Tag } from "./types";
 import { determineBufferEncoding } from "./util";
 
 let Stream: typeof NodeStream;
@@ -14,6 +14,7 @@ try {
 }
 
 // @ts-expect-error
+// oxlint-disable-next-line no-unnecessary-condition
 if (!Stream) Stream = function () {};
 
 const streamWraps = EVENTS.filter(function (ev) {
@@ -49,12 +50,12 @@ class SAXStream extends Stream {
 
     // Set up dynamic getters/setters for stream wraps
     streamWraps.forEach((ev) => {
-      Object.defineProperty(this, "on" + ev, {
-        get: () => this._parser["on" + ev],
+      Object.defineProperty(this, `on${ev}`, {
+        get: () => this._parser[`on${ev}`],
         set: (h) => {
           if (!h) {
             this.removeAllListeners(ev);
-            this._parser["on" + ev] = h;
+            this._parser[`on${ev}`] = h;
             return h;
           }
           this.on(ev, h);
