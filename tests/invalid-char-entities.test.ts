@@ -22,28 +22,28 @@ for (const invalidChar of invalidChars) {
 
   // Strict mode must report the reference as an invalid character entity.
   test({
-    xml: "<r>&#" + body + ";</r>",
+    xml: `<r>&#${body};</r>`,
     strict: true,
     expect: [
       ["opentagstart", { name: "r", attributes: {} }],
       ["opentag", { name: "r", attributes: {}, isSelfClosing: false }],
       [
         "error",
-        "Invalid character entity\nLine: 0\nColumn: " + column + "\nChar: ;",
+        `Invalid character entity\nLine: 0\nColumn: ${column}\nChar: ;`,
       ],
-      ["text", "&#" + body + ";"],
+      ["text", `&#${body};`],
       ["closetag", "r"],
     ],
   });
 
   // Non-strict mode is lenient and passes the reference through as text.
   test({
-    xml: "<r>&#" + body + ";</r>",
+    xml: `<r>&#${body};</r>`,
     strict: false,
     expect: [
       ["opentagstart", { name: "R", attributes: {} }],
       ["opentag", { name: "R", attributes: {}, isSelfClosing: false }],
-      ["text", "&#" + body + ";"],
+      ["text", `&#${body};`],
       ["closetag", "R"],
     ],
   });

@@ -280,6 +280,17 @@ function closeTag(parser: SAXParser): void {
   parser.state = STATE.TEXT;
 }
 
+function isXmlChar(num: number): boolean {
+  return (
+    num === 0x9 ||
+    num === 0xa ||
+    num === 0xd ||
+    (num >= 0x20 && num <= 0xd7ff) ||
+    (num >= 0xe000 && num <= 0xfffd) ||
+    (num >= 0x10000 && num <= 0x10ffff)
+  );
+}
+
 function parseEntity(parser: SAXParser): string {
   let entity = parser.entity;
   const entityLC = entity.toLowerCase();
@@ -305,12 +316,7 @@ function parseEntity(parser: SAXParser): string {
     }
   }
   entity = entity.replace(/^0+/, "");
-  if (
-    isNaN(num) ||
-    numStr.toLowerCase() !== entity ||
-    num < 0 ||
-    num > 0x10ffff
-  ) {
+  if (isNaN(num) || numStr.toLowerCase() !== entity || !isXmlChar(num)) {
     strictFail(parser, "Invalid character entity");
     return `&${parser.entity};`;
   }
@@ -350,8 +356,7 @@ function openTag(parser: SAXParser, selfClosing?: true): void {
     // handle deferred onattribute events
     // Note: do not apply default ns to attributes:
     //   http://www.w3.org/TR/REC-xml-names/#defaulting
-    for (let i = 0, l = parser.attribList.length; i < l; i++) {
-      const nv = parser.attribList[i];
+    for (const nv of parser.attribList) {
       const name = nv[0];
       const value = nv[1];
       const qualName = qname(name, true);
@@ -411,6 +416,11 @@ class SAXParser {
   declare state: number;
   declare tagName?: string;
   declare cdata?: string;
+  declare attribList: unknown[];
+  // not sure if it should be always not undefined
+  declare attribName?: string;
+  // not sure if it should be always not undefined
+  declare attribValue?: string;
 
   constructor(strict?: boolean, opt?: SAXOptions) {
     this.#init(strict, opt);
