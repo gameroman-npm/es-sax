@@ -9,7 +9,7 @@ test("cdata-mega", () => {
   const cdataSize = 1 * bytesInMiB;
   const expectedUpperBound = cdataSize * 2;
   const cdataContent = "X".repeat(cdataSize);
-  const xml = "<r><![CDATA[" + cdataContent + "]]></r>";
+  const xml = `<r><![CDATA[${cdataContent}]]></r>`;
 
   const memoryUsageBefore = process.memoryUsage().heapUsed;
 
@@ -24,9 +24,8 @@ test("cdata-mega", () => {
   assert.strictEqual(parsedCData, cdataContent);
   assert.ok(
     memoryUsageDiff < expectedUpperBound,
-    "Expected at most " +
-      expectedUpperBound / bytesInMiB +
-      " MiB to be allocated, was " +
-      memoryUsageDiff / bytesInMiB,
+    `Expected at most ${
+      expectedUpperBound / bytesInMiB
+    } MiB to be allocated, was ${memoryUsageDiff / bytesInMiB}`,
   );
 });

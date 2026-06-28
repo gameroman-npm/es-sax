@@ -19,7 +19,7 @@ function test(options: TestOptions) {
   const testError: unknown = null;
 
   sax.EVENTS.forEach(function (ev) {
-    parser["on" + ev] = function (n) {
+    parser[`on${ev}`] = function (n) {
       if (process.env.DEBUG) {
         console.error({ expect: expect[e], actual: [ev, n] });
       }

@@ -7,7 +7,7 @@ function testPosition(chunks, expectedEvents) {
   const parser = sax.parser();
 
   expectedEvents.forEach(function (expectation) {
-    parser["on" + expectation[0]] = function () {
+    parser[`on${expectation[0]}`] = function () {
       for (const prop in expectation[1]) {
         assert.strictEqual(parser[prop], expectation[1][prop]);
       }
