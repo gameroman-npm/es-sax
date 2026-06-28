@@ -592,7 +592,8 @@ class SAXParser {
             strictFail(this, "Unencoded <");
             if (this.startTagPosition + 1 < this.position) {
               const pad = this.position - this.startTagPosition;
-              c = new Array(pad).join(" ") + c;
+              // c is a char so it has a length of 1
+              c = c.padStart(pad, " ");
             }
             this.textNode += `<${c}`;
             this.state = S.TEXT;
