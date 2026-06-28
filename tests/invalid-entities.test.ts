@@ -2,19 +2,19 @@ import { test } from "./index.ts";
 
 const invalidEntities = ["1114112", "-1", "NaN"];
 
-for (let i = invalidEntities.length - 1; i >= 0; --i) {
+for (const invalidEntitiy of invalidEntities) {
   test({
-    xml: `<r>&#${invalidEntities[i]};</r>`,
+    xml: `<r>&#${invalidEntitiy};</r>`,
     strict: false,
     expect: [
       ["opentagstart", { name: "R", attributes: {} }],
       ["opentag", { name: "R", attributes: {}, isSelfClosing: false }],
-      ["text", `&#${invalidEntities[i]};`],
+      ["text", `&#${invalidEntitiy};`],
       ["closetag", "R"],
     ],
   });
   test({
-    xml: `<r>&#${invalidEntities[i]};</r>`,
+    xml: `<r>&#${invalidEntitiy};</r>`,
     strict: true,
     expect: [
       ["opentagstart", { name: "r", attributes: {} }],
@@ -22,10 +22,10 @@ for (let i = invalidEntities.length - 1; i >= 0; --i) {
       [
         "error",
         `Invalid character entity\nLine: 0\nColumn: ${
-          6 + invalidEntities[i].length
+          6 + invalidEntitiy.length
         }\nChar: ;`,
       ],
-      ["text", `&#${invalidEntities[i]};`],
+      ["text", `&#${invalidEntitiy};`],
       ["closetag", "r"],
     ],
   });
