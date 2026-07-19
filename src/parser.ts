@@ -123,7 +123,7 @@ function strictFail(parser: SAXParser, message): void {
 }
 
 function validateXmlDeclarationEncoding(parser: SAXParser, data): void {
-  if (!parser.strict || !parser.encoding || !data || data.name !== "xml") {
+  if (!parser.strict || !parser.encoding || data?.name !== "xml") {
     return;
   }
 

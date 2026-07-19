@@ -115,7 +115,7 @@ class SAXStream extends Stream {
   }
 
   end(chunk?: string | Buffer): true {
-    if (chunk && chunk.length) {
+    if (chunk?.length) {
       this.write(chunk);
     }
     // Flush any remaining decoded data from the TextDecoder
