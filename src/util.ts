@@ -105,7 +105,8 @@ function notMatch(regex: RegExp, c: string): boolean {
 }
 
 function getDeclaredEncoding(body: string): string | null | undefined {
-  const match = body?.match(/(?:^|\s)encoding\s*=\s*(['"])([^'"]+)\1/i);
+  if (!body) return null;
+  const match = body.match(/(?:^|\s)encoding\s*=\s*(['"])([^'"]+)\1/i);
   return match ? match[2] : null;
 }
 
