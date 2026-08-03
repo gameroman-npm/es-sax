@@ -1,10 +1,8 @@
-import { defineConfig } from "@gameroman/config/oxlint/typeaware";
+import { defineConfig } from "@gameroman/config/oxlint/ts";
 
 export default defineConfig({
-  rules: {
-    "no-floating-promises": "warn",
-  },
-  options: {
-    typeCheck: false,
-  },
+  options: { typeCheck: false },
+  overrides: [
+    { files: ["**/tests/**"], rules: { "no-floating-promises": "off" } },
+  ],
 });
