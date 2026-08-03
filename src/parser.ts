@@ -433,10 +433,10 @@ class SAXParser {
     this.bufferCheckPosition = sax.MAX_BUFFER_LENGTH;
     this.encoding = null;
     this.opt = opt || {};
-    this.opt.lowercase = this.opt.lowercase || this.opt.lowercasetags;
+    this.opt.lowercase ||= this.opt.lowercasetags;
     this.looseCase = this.opt.lowercase ? "toLowerCase" : "toUpperCase";
-    this.opt.maxEntityCount = this.opt.maxEntityCount || 512;
-    this.opt.maxEntityDepth = this.opt.maxEntityDepth || 4;
+    this.opt.maxEntityCount ||= 512;
+    this.opt.maxEntityDepth ||= 4;
     this.entityCount = this.entityDepth = 0;
     this.tags = [];
     this.closed = this.closedRoot = this.sawRoot = false;
